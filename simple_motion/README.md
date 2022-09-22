@@ -6,11 +6,15 @@ This ROS package contains a ROS node that allows for a simple translation and ro
 - ROS -- tested on Melodic, but other versions may work.
 - colcon -- used for building the application. 
 
+## Configuration
+The number of sides, side length, and rotation direction are all determined by the launch file
+
 ## Build
 Once cloned in a ROS workspace, e.g., `ros_workspace/src/`, run the following commands to build it:
 
 	cd ros_workspace
 	colcon build
+    delete the /install directory (needed for clean rolaunch)
 	
 ## Run
 Run first the robot nodes or simulator. 

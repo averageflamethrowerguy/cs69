@@ -38,8 +38,6 @@ class SimpleShapes:
 
     def calc_pub_error(self):
         """Calculate the Cartesian distance between the actual and predicted coordinates"""
-        print(self.actual_loc)
-        print(self.pred_loc)
         x_error = self.actual_loc[0] - self.pred_loc[0]
         y_error = self.actual_loc[1] - self.pred_loc[1]
         error = math.sqrt(x_error*x_error + y_error*y_error)
@@ -67,6 +65,8 @@ class SimpleShapes:
 
         # loop until either all sides are drawn or the robot is ordered to stop
         while sides_drawn < num_sides and not self.stopped:
+            print("Side length: " + str(side_length))
+
             # predict the location and orientation at the end of the movement
             self.pred_loc = (self.pred_loc[0] + side_length*math.cos(self.pred_orientation),
                              self.pred_loc[1] + side_length*math.sin(self.pred_orientation))
@@ -96,6 +96,15 @@ def main():
     # Sleep for a few seconds to wait for the registration.
     rospy.sleep(2)
 
+    # Retrieve the parameters for the robot to drive
+    sides = rospy.get_param("sides")
+    side_length = rospy.get_param("side_length")
+    counterclockwise = rospy.get_param("counterclockwise")
+
+    print("Sides: " + str(sides))
+    print("Side Length: " + str(side_length))
+    print("Counterclockwise? " + str(counterclockwise))
+
     # Initialization of the class for the shapes
     simple_shapes = SimpleShapes()
 
@@ -103,7 +112,10 @@ def main():
     rospy.on_shutdown(simple_shapes.stop)
 
     # run the program
-    simple_shapes.draw_shape(num_sides=4, side_length=1, counterclockwise=True)
+    simple_shapes.draw_shape(num_sides=int(sides),
+                             side_length=float(side_length),
+                             counterclockwise=bool(counterclockwise)
+                             )
 
 
 
