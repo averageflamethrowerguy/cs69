@@ -1,3 +1,9 @@
 # Catkin install python
 Use this for elements in the /nodes/ folder (executables)
 
+# Package name:
+goes in:
+    setup.py
+    src/<package_name>
+    top_level_dir
+    project name of CMakeLists.txt
