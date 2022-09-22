@@ -1,0 +1,110 @@
+#!/usr/bin/env python
+#The line above is important so that this file is interpreted with Python when running it.
+# Simple Shapes written by Elliot Potter
+# Sep 21, 2022, with other code used from last fall
+
+# Import of python modules.
+import math # use of pi.
+import tf # library for transformations.
+
+# import of relevant libraries.
+import rospy # module for ROS APIs
+from nav_msgs.msg import Odometry # message type for odometry
+from std_msgs.msg import Float32
+# from simple_shapes.src.simple_motion.simple_motion import SimpleMotion
+from simple_shapes.simple_motion import SimpleMotion
+
+class SimpleShapes:
+    def __init__(self):
+        """Initialize the module"""
+        self.stopped = False
+        # initialize the predicted locations and orientations
+        self.pred_loc = (0,0)
+        self.pred_orientation = 0
+        # initialize an instance of SimpleMotion because it isn't stateless...
+        self.simple_motion = SimpleMotion()
+        # initialize odometry subscriber
+        self.odom_subscriber = rospy.Subscriber("odom", Odometry, self.odometry_callback )
+        self.float32_pub = rospy.Publisher("error", Float32, queue_size = 1)
+        self.actual_loc = (0, 0)
+        self.actual_orientation = 0
+
+    def odometry_callback(self, odom_message):
+        """Updates class variables with information about the robot state"""
+        pose = odom_message.pose.pose
+        self.actual_loc = (pose.position.x, pose.position.y)
+        self.actual_orientation = tf.transformations.euler_from_quaternion([pose.orientation.x, pose.orientation.y,
+                            pose.orientation.z, pose.orientation.w])[2]
+
+    def calc_pub_error(self):
+        """Calculate the Cartesian distance between the actual and predicted coordinates"""
+        x_error = self.actual_loc[0] - self.pred_orientation[0]
+        y_error = self.actual_loc[1] - self.pred_orientation[1]
+        error = math.sqrt(x_error*x_error + y_error*y_error)
+        print("Error is: " + str(error))
+
+        # publish the error
+        float32_msg = Float32()
+        float32_msg.data = error
+        self.float32_pub.publish(float32_msg)
+
+    def draw_shape(self, num_sides, side_length, counterclockwise=True):
+        """Draws the shape"""
+        sides_drawn = 0
+
+        # degenerate case -- robot stays in one spot
+        if num_sides <= 1:
+            return
+
+        # calculate how far the robot has to rotate between each side
+        rotation_deg = 360 / num_sides
+        # clockwise rotation flips the direction of rotation
+        if not counterclockwise:
+            rotation_deg = -rotation_deg
+        rotation_rad = math.pi * rotation_deg / 180
+
+        # loop until either all sides are drawn or the robot is ordered to stop
+        while sides_drawn < num_sides and not self.stopped:
+            # predict the location and orientation at the end of the movement
+            self.pred_loc = (self.pred_loc[0] + side_length*math.cosine(rotation_rad),
+                             self.pred_loc[1] + side_length*math.sine(rotation_rad))
+            self.pred_orientation += rotation_rad
+
+            # drive forward side_length
+            self.simple_motion.move_forward(side_length)
+
+            # rotate rotation_rad
+            self.simple_motion.rotate_in_place(rotation_rad)
+
+            # calculate error and publish
+            self.calc_pub_error()
+
+            sides_drawn += 1
+
+    def stop(self):
+        """Stop the robot"""
+        self.stopped = True
+
+def main():
+    """Main function."""
+
+    # 1st. initialization of node.
+    rospy.init_node("simple_shapes")
+
+    # Sleep for a few seconds to wait for the registration.
+    rospy.sleep(2)
+
+    # Initialization of the class for the shapes
+    simple_shapes = SimpleShapes()
+
+    # If interrupted, send a stop command.
+    rospy.on_shutdown(simple_shapes.stop)
+
+    # run the program
+    simple_shapes.draw_shape(num_sides=4, side_length=1, counterclockwise=True)
+
+
+
+if __name__ == "__main__":
+    """Run the main function."""
+    main()
