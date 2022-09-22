@@ -12,7 +12,7 @@ import rospy # module for ROS APIs
 from nav_msgs.msg import Odometry # message type for odometry
 from std_msgs.msg import Float32
 # from simple_shapes.src.simple_motion.simple_motion import SimpleMotion
-from simple_motion.simple_motion import SimpleMotion
+from simple_shapes.simple_motion import SimpleMotion
 
 class SimpleShapes:
     def __init__(self):

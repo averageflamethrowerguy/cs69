@@ -1,6 +1,6 @@
-# simple_motion ROS package
-
-This ROS package contains a ROS node that allows for a simple translation and rotation based on velocities and distance/rotation, and for stop if there is anything immediately in front of it, based on laser scanner.
+# simple_shapes ROS package
+This ROS package drives the robot in a pattern corresponding to a regular polygon, with specified number of sides
+and side length.
 
 ## Requirements
 - ROS -- tested on Melodic, but other versions may work.
@@ -21,8 +21,11 @@ Run first the robot nodes or simulator.
 Then, source and use the launch file:
 
 	source ros_workspace/install/setup.sh
-	roslaunch simple_motion simple_motion.launch
+	roslaunch simple_shapes simple_shapes.launch
 
 ## Attribution & Licensing
 
-Materials substantially authored by Alberto Quattrini Li. Copyright 2020 by Amazon.com, Inc. or its affiliates. Licensed MIT-0 - See LICENSE for further information
+Materials substantially authored by Alberto Quattrini Li. 
+Copyright 2020 by Amazon.com, Inc. or its affiliates. Licensed MIT-0 - See LICENSE for further information
+
+Source was modified by Elliot Potter in Fall 2022

@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!-- Full information here http://wiki.ros.org/catkin/package.xml -->
 <package format="2">
-  <name>simple_motion</name>
+  <name>simple_shapes</name>
   <version>0.1.0</version>
   <description>
-    ROS package for moving the robot forward for a given distance and rotate.
+    ROS package for moving the robot in simple shapes
   </description>
   <maintainer email="class@class.edu">Class</maintainer>
   <license>MIT</license>

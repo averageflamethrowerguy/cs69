@@ -5,5 +5,5 @@
   <param name="side_length" value="2" />
   <param name="counterclockwise" value="True" />
 
-  <node pkg="simple_motion" type="simple_shapes" name="simple_shapes" output="screen"/>
+  <node pkg="simple_shapes" type="simple_shapes" name="simple_shapes" output="screen"/>
 </launch>
