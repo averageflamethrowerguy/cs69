@@ -55,6 +55,7 @@ include_directories(
 
 catkin_install_python(PROGRAMS 
   nodes/simple_motion
+  nodes/simple_shapes
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -12,7 +12,7 @@ import rospy # module for ROS APIs
 from nav_msgs.msg import Odometry # message type for odometry
 from std_msgs.msg import Float32
 # from simple_shapes.src.simple_motion.simple_motion import SimpleMotion
-from simple_shapes.simple_motion import SimpleMotion
+from simple_motion.simple_motion import SimpleMotion
 
 class SimpleShapes:
     def __init__(self):
@@ -38,8 +38,10 @@ class SimpleShapes:
 
     def calc_pub_error(self):
         """Calculate the Cartesian distance between the actual and predicted coordinates"""
-        x_error = self.actual_loc[0] - self.pred_orientation[0]
-        y_error = self.actual_loc[1] - self.pred_orientation[1]
+        print(self.actual_loc)
+        print(self.pred_loc)
+        x_error = self.actual_loc[0] - self.pred_loc[0]
+        y_error = self.actual_loc[1] - self.pred_loc[1]
         error = math.sqrt(x_error*x_error + y_error*y_error)
         print("Error is: " + str(error))
 
@@ -66,8 +68,8 @@ class SimpleShapes:
         # loop until either all sides are drawn or the robot is ordered to stop
         while sides_drawn < num_sides and not self.stopped:
             # predict the location and orientation at the end of the movement
-            self.pred_loc = (self.pred_loc[0] + side_length*math.cosine(rotation_rad),
-                             self.pred_loc[1] + side_length*math.sine(rotation_rad))
+            self.pred_loc = (self.pred_loc[0] + side_length*math.cos(self.pred_orientation),
+                             self.pred_loc[1] + side_length*math.sin(self.pred_orientation))
             self.pred_orientation += rotation_rad
 
             # drive forward side_length
