@@ -71,6 +71,11 @@ class SimpleMotion():
         twist_msg.angular.z = self.angular_velocity
         
         duration = rotation_angle / twist_msg.angular.z
+        if duration < 0:
+            # flip velocity if angle is negative
+            twist_msg.angular.z = -twist_msg.angular.z
+            duration = -duration
+
         start_time = rospy.get_rostime()
         rate = rospy.Rate(FREQUENCY)
         while not rospy.is_shutdown():
