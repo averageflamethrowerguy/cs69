@@ -4,7 +4,6 @@ and side length.
 
 ## Requirements
 - ROS -- tested on Melodic, but other versions may work.
-- colcon -- used for building the application. 
 
 ## Configuration
 The number of sides, side length, and rotation direction are all determined by the launch file
@@ -13,8 +12,7 @@ The number of sides, side length, and rotation direction are all determined by t
 Once cloned in a ROS workspace, e.g., `ros_workspace/src/`, run the following commands to build it:
 
 	cd ros_workspace
-	colcon build
-    delete the /install directory (needed for clean rolaunch)
+    catkin_make
 	
 ## Run
 Run first the robot nodes or simulator. 

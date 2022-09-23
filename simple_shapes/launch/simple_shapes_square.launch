@@ -1,7 +1,7 @@
 <launch>
   <arg name="use_sim_time" default="true"/>
   <param name="use_sim_time" value="$(arg use_sim_time)"/>
-  <param name="sides" value="3" />
+  <param name="sides" value="4" />
   <param name="side_length" value="1" />
   <param name="counterclockwise" value="False" />
 
