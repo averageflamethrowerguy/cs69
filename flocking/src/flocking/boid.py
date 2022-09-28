@@ -23,6 +23,16 @@ def get_distance_between_boids(boid_pos_1, boid_pos_2):
     return math.pow((math.pow(boid_pos_1[0] - boid_pos_2[0], 2.0) + math.pow(boid_pos_1[1] - boid_pos_2[1], 2.0)), 0.5)
 
 
+def constrain_angle(angle):
+    """Converts an arbitrary angle (in radians) between -2*pi and 2*pi into one between negative pi and pi"""
+    if angle > math.pi:
+        return angle - math.pi
+    elif angle < -math.pi
+        return angle + math.pi
+    else:
+        return angle
+
+
 def get_goal_orientation(flock_positions, robot_index):
     """
     Gets the goal orientation (in radians) for the robot to travel in
@@ -35,8 +45,13 @@ def get_goal_orientation(flock_positions, robot_index):
     """
 
     separation_term = (0.0, 0.0)
+    separation_count = 0
+
     cohesion_term = (0.0, 0.0)
+    cohesion_count = 0
+
     alignment_term = 0
+    alignment_count = 0
 
     robot_position = flock_positions[robot_index]
 
@@ -54,6 +69,7 @@ def get_goal_orientation(flock_positions, robot_index):
             force_vec = (-ROBOT_SEPARATION_INTENSITY*distance*direction[0],
                          -ROBOT_SEPARATION_INTENSITY*distance*direction[1])
             separation_term = (separation_term[0]+force_vec[0], separation_term[1]+force_vec[1])
+            separation_count += 1
 
         # calculate cohesion part
         if distance < ROBOT_COHESION_RANGE:
@@ -61,9 +77,19 @@ def get_goal_orientation(flock_positions, robot_index):
             force_vec = (ROBOT_COHESION_INTENSITY*direction[0],
                          ROBOT_COHESION_INTENSITY*direction[1])
             cohesion_term = (cohesion_term[0]+force_vec[0], cohesion_term[1]+force_vec[1])
+            cohesion_count += 1
 
-        # TODO -- calculate alignment part
+        # calculate alignment part
+        if distance < ROBOT_ALIGNMENT_RANGE:
+            # robot aligns with other nearby robots
+            # this value should be bounded by +/- pi
+            alignment_term += ROBOT_ALIGNMENT_INTENSITY*(flock_positions[i][2] - robot_position[2])
+            alignment_count += 1
 
-    # TODO -- calculate direction of force vec
+    # calculate direction of force vec
+    force_vec = (separation_term[0]+cohesion_term[0], separation_term[1]+cohesion_term[1])
+    direction = math.atan2(force_vec[1], force_vec[0])        # use atan2 rather than atan to find the correct quadrant
+    desired_alignment = constrain_angle(alignment_term / alignment_count)
 
-    # TODO -- bias force vec by alignment
+    # return the direction of the force vec biased by the direction of the alignment vec
+    return constrain_angle(direction + desired_alignment)
