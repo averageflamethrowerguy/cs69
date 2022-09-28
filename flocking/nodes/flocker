@@ -11,8 +11,7 @@ import tf # library for transformations.
 import rospy # module for ROS APIs
 from nav_msgs.msg import Odometry # message type for odometry
 from std_msgs.msg import Float32
-# from simple_shapes.src.simple_motion.simple_motion import SimpleMotion
-from simple_shapes.simple_motion import SimpleMotion
+from flocking.flocking import get_goal_orientation
 
 
 # define a constant speed for the robot to travel at
@@ -56,9 +55,24 @@ class Flocker:
         self.current_position = (pose.position.x, pose.position.y)
         self.current_orientation = tf.transformations.euler_from_quaternion([pose.orientation.x, pose.orientation.y,
                                                                             pose.orientation.z, pose.orientation.w])[2]
+        # manipulate the message so it's obvious who it comes from, then resend it
+        odom_message.child_frame_id = self.robot_index
+        self.odom_publisher.publish(odom_message)
 
     def flock_pos_callback(self, odom_message):
         """Updates the position of the member of the flock in the array, changes current and goal orientations"""
+        index = int(odom_message.child_frame_id)
+        # if we intercept our own message, return early
+        if index == self.robot_index:
+            return
+
+        pose = odom_message.pose.pose
+        current_orientation = tf.transformations.euler_from_quaternion([pose.orientation.x, pose.orientation.y,
+                                                                        pose.orientation.z, pose.orientation.w])[2]
+        # otherwise, update the array with the x,y,rz triple
+        self.flock_positions[index] = (pose.position.x, pose.position.y, current_orientation)
+        # get the desired orientation from the boid function
+        self.goal_orientation = get_goal_orientation(self.flock_positions, self.robot_index)
 
     def drive(self):
         """Driving loop which moves the robot toward the goal orientation while going forward"""

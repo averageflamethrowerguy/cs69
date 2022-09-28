@@ -1,9 +1,6 @@
 # Import of python modules.
 import math # use of pi.
 
-# import of relevant libraries.
-import rospy # module for ROS APIs
-
 ROBOT_COHESION_RANGE = 5
 ROBOT_SEPARATION_RANGE = 2
 ROBOT_ALIGNMENT_RANGE = 5
@@ -27,7 +24,7 @@ def constrain_angle(angle):
     """Converts an arbitrary angle (in radians) between -2*pi and 2*pi into one between negative pi and pi"""
     if angle > math.pi:
         return angle - math.pi
-    elif angle < -math.pi
+    elif angle < -math.pi:
         return angle + math.pi
     else:
         return angle
@@ -88,8 +85,13 @@ def get_goal_orientation(flock_positions, robot_index):
 
     # calculate direction of force vec
     force_vec = (separation_term[0]+cohesion_term[0], separation_term[1]+cohesion_term[1])
-    direction = math.atan2(force_vec[1], force_vec[0])        # use atan2 rather than atan to find the correct quadrant
-    desired_alignment = constrain_angle(alignment_term / alignment_count)
+    # use atan2 rather than atan to find the correct quadrant
+    direction = math.atan2(force_vec[1], force_vec[0])
+    # essentially taking the current angle and perturbing it
+    desired_alignment = constrain_angle(alignment_term / alignment_count + robot_position[2])
 
-    # return the direction of the force vec biased by the direction of the alignment vec
-    return constrain_angle(direction + desired_alignment)
+    # calculate a weighted average of the force vec and desired_alignment
+    return constrain_angle(
+        ((ROBOT_COHESION_INTENSITY+ROBOT_SEPARATION_INTENSITY)*direction + ROBOT_ALIGNMENT_INTENSITY*desired_alignment)
+        / (ROBOT_ALIGNMENT_INTENSITY+ROBOT_COHESION_INTENSITY+ROBOT_SEPARATION_INTENSITY)
+    )
