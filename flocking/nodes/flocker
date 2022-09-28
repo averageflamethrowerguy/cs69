@@ -37,6 +37,8 @@ class Flocker:
         # create a publisher to publish our own bot position
         self.odom_publisher = rospy.publisher("flock_positions")
 
+        # TODO -- LaserScan subscriber
+
         # create a subscriber to listen to other bot positions
         self.flock_pos_subscriber = rospy.Subscriber("flock_positions", Odometry, self.flock_pos_callback)
 
@@ -44,6 +46,9 @@ class Flocker:
         self.current_position = (0.0, 0.0)
         self.current_orientation = 0.0
         self.goal_orientation = 0.0
+
+        # define allowable direction range that prevents boid from hitting wall
+        self.orientation_range = (-math.pi, math.pi)
 
     def odometry_callback(self, odom_message):
         """Updates class variables with information about the robot state"""
