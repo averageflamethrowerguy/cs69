@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+#The line above is important so that this file is interpreted with Python when running it.
+# Flocker written by Elliot Potter
+# Sep 21, 2022, with other code used from last fall
+
+# Import of python modules.
+import math # use of pi.
+import tf # library for transformations.
+
+# import of relevant libraries.
+import rospy # module for ROS APIs
+from nav_msgs.msg import Odometry # message type for odometry
+from std_msgs.msg import Float32
+# from simple_shapes.src.simple_motion.simple_motion import SimpleMotion
+from simple_shapes.simple_motion import SimpleMotion
+
+
+# define a constant speed for the robot to travel at
+ROBOT_VELOCITY = 0.5
+
+
+class Flocker:
+    def __init__(self, robot_index, robot_count):
+        """Initialize the module"""
+        self.stopped = False
+        self.robot_index = robot_index
+        self.robot_count = robot_count
+
+        # initialize an array of flock positions
+        # x, y, rz
+        self.flock_positions = []
+        for i in range(robot_count):
+            self.flock_positions.append((0.0, 0.0, 0.0))
+
+        # initialize odometry subscriber
+        self.odom_subscriber = rospy.Subscriber("odom", Odometry, self.odometry_callback)
+        # create a publisher to publish our own bot position
+        self.odom_publisher = rospy.publisher("flock_positions")
+
+        # create a subscriber to listen to other bot positions
+        self.flock_pos_subscriber = rospy.Subscriber("flock_positions", Odometry, self.flock_pos_callback)
+
+        # initialize the current and goal orientations, positions
+        self.current_position = (0.0, 0.0)
+        self.current_orientation = 0.0
+        self.goal_orientation = 0.0
+
+    def odometry_callback(self, odom_message):
+        """Updates class variables with information about the robot state"""
+        pose = odom_message.pose.pose
+        self.current_position = (pose.position.x, pose.position.y)
+        self.current_orientation = tf.transformations.euler_from_quaternion([pose.orientation.x, pose.orientation.y,
+                                                                            pose.orientation.z, pose.orientation.w])[2]
+
+    def flock_pos_callback(self, odom_message):
+        """Updates the position of the member of the flock in the array, changes current and goal orientations"""
+
+    def drive(self):
+        """Driving loop which moves the robot toward the goal orientation while going forward"""
+
+    def stop(self):
+        """Stop the robot"""
+        self.stopped = True
+
+def main():
+    """Main function."""
+
+    # 1st. initialization of node.
+    # TODO -- naming of node based on args
+    rospy.init_node("flocker")
+
+    # Sleep for a few seconds to wait for the registration.
+    rospy.sleep(2)
+
+    robot_count = rospy.get_param("robot_count")
+    robot_index = rospy.get_param("robot_index")
+
+    # Initialization of the class for the shapes
+    flocker = Flocker(robot_index, robot_count)
+
+    # If interrupted, send a stop command.
+    rospy.on_shutdown(flocker.stop)
+
+    # run the program
+    flocker.drive()
+
+
+
+if __name__ == "__main__":
+    """Run the main function."""
+    main()
