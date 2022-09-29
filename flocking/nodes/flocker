@@ -11,12 +11,14 @@ import tf # library for transformations.
 import rospy # module for ROS APIs
 from nav_msgs.msg import Odometry # message type for odometry
 from std_msgs.msg import Float32
-from flocking.flocking import get_goal_orientation
-
+from geometry_msgs.msg import Twist # message type for cmd_vel
+from sensor_msgs.msg import LaserScan # message type for scan
+from flocking.flocking import get_goal_orientation, constrain_angle, get_safe_range
 
 # define a constant speed for the robot to travel at
 ROBOT_VELOCITY = 0.5
-
+FREQUENCY = 10 #Hz.
+WALL_AVOID_RANGE = 2            # the range at which to start worrying about walls
 
 class Flocker:
     def __init__(self, robot_index, robot_count):
@@ -36,7 +38,8 @@ class Flocker:
         # create a publisher to publish our own bot position
         self.odom_publisher = rospy.publisher("flock_positions")
 
-        # TODO -- LaserScan subscriber
+        self._cmd_pub = rospy.Publisher("cmd_vel", Twist, queue_size=1)
+        self._laser_sub = rospy.Subscriber('scan', LaserScan, self._laser_callback, queue_size=1)
 
         # create a subscriber to listen to other bot positions
         self.flock_pos_subscriber = rospy.Subscriber("flock_positions", Odometry, self.flock_pos_callback)
@@ -59,8 +62,20 @@ class Flocker:
         odom_message.child_frame_id = self.robot_index
         self.odom_publisher.publish(odom_message)
 
+        self.update_goals()
+
+    @staticmethod
+    def find_closest_angle(goal, option1, option2):
+        """All three angles are between -pi and pi"""
+        dist1 = math.fabs(constrain_angle(goal - option1))
+        dist2 = math.fabs(constrain_angle(goal - option2))
+        if dist2 > dist1:
+            return option1
+        else:
+            return option2
+
     def flock_pos_callback(self, odom_message):
-        """Updates the position of the member of the flock in the array, changes current and goal orientations"""
+        """Updates the position of the member of the flock in the array"""
         index = int(odom_message.child_frame_id)
         # if we intercept our own message, return early
         if index == self.robot_index:
@@ -71,11 +86,52 @@ class Flocker:
                                                                         pose.orientation.z, pose.orientation.w])[2]
         # otherwise, update the array with the x,y,rz triple
         self.flock_positions[index] = (pose.position.x, pose.position.y, current_orientation)
+
+
+    def _laser_callback(self, laser_message):
+        """Worries about where the walls are"""
+        self.orientation_range = get_safe_range(laser_message)
+
+    def update_goals(self):
+        """Given an initialized robot position and array of other robots, figure out where the robot should travel"""
         # get the desired orientation from the boid function
-        self.goal_orientation = get_goal_orientation(self.flock_positions, self.robot_index)
+        goal_orientation = get_goal_orientation(self.flock_positions, self.robot_index)
+
+        # Handle two cases of angle -- safe orientation doesn't straddle pi, and it does
+        # safe orientation doesn't straddle pi
+        if self.orientation_range[0] < self.orientation_range[1]:
+            # if goal orientation is not in this range
+            if self.orientation_range[0] > goal_orientation or goal_orientation > self.orientation_range[1]:
+                # calculate the shorter orientation distance
+                goal_orientation = self.find_closest_angle(
+                    goal_orientation,
+                    self.orientation_range[0],
+                    self.orientation_range[1]
+                )
+
+        # safe orientation straddles pi
+        else:
+            # if goal orientation is between the two numbers
+            if self.orientation_range[1] < goal_orientation < self.orientation_range[0]:
+                # calculate the shorter orientation distance
+                goal_orientation = self.find_closest_angle(
+                    goal_orientation,
+                    self.orientation_range[0],
+                    self.orientation_range[1]
+                )
+
+        # update the instance variables
+        self.goal_orientation = goal_orientation
 
     def drive(self):
         """Driving loop which moves the robot toward the goal orientation while going forward"""
+        rate = rospy.Rate(FREQUENCY)
+        while not self.stopped:
+            twist_msg = Twist()
+            twist_msg.linear.x = ROBOT_VELOCITY
+            twist_msg.angular.z = self.goal_orientation - self.current_orientation
+            self._cmd_pub.publish(twist_msg)
+            rate.sleep()
 
     def stop(self):
         """Stop the robot"""
