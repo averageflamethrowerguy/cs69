@@ -12,6 +12,52 @@
         <arg name="debug" value="false"/>
     </include>
 
+    <!-- Define arguments for the construction of the robots -->
+    <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
+    <arg name="robot_0_pos_x" default="0"/>
+    <arg name="robot_0_pos_y" default=" -0.5"/>
+    <arg name="robot_0_pos_z" default=" 0.0"/>
+    <arg name="robot_0_yaw" default="0"/>
+
+    <arg name="robot_1_pos_x" default="0"/>
+    <arg name="robot_1_pos_y" default="0.5"/>
+    <arg name="robot_1_pos_z" default=" 0.0"/>
+    <arg name="robot_1_yaw" default="45" />
+
+    <arg name="robot_2_pos_x" default="0.5"/>
+    <arg name="robot_2_pos_y" default="0.5"/>
+    <arg name="robot_2_pos_z" default=" 0.0"/>
+    <arg name="robot_2_yaw" default="-45" />
+
+    <!-- Define robot_0 -->
+    <group ns="robot_0">
+        <param name="robot_description" command="$(find xacro)/xacro.py $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+        <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+            <param name="publish_frequency" type="double" value="50.0" />
+            <param name="tf_prefix" value="robot_0" />
+        </node>
+        <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model robot_0 -x $(arg robot_0_pos_x) -y $(arg robot_0_pos_y) -z $(arg robot_0_pos_z)          -Y $(arg robot_0_yaw) -param robot_description" />
+    </group>
+
+    <!-- Define robot_1 -->
+    <group ns="robot_1">
+        <param name="robot_description" command="$(find xacro)/xacro.py $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+        <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+            <param name="publish_frequency" type="double" value="50.0" />
+            <param name="tf_prefix" value="robot_1" />
+        </node>
+        <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model robot_1 -x $(arg robot_1_pos_x) -y $(arg robot_1_pos_y) -z $(arg robot_1_pos_z)          -Y $(arg robot_1_yaw) -param robot_description" />
+    </group>
+
+    <!-- Define robot_2 -->
+    <group ns="robot_2">
+        <param name="robot_description" command="$(find xacro)/xacro.py $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+        <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+            <param name="publish_frequency" type="double" value="50.0" />
+            <param name="tf_prefix" value="robot_2" />
+        </node>
+        <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model robot_2 -x $(arg robot_2_pos_x) -y $(arg robot_2_pos_y) -z $(arg robot_2_pos_z)          -Y $(arg robot_2_yaw) -param robot_description" />
+    </group>
 
   <node pkg="flocking" type="flocker" name="flocker" output="screen"/>
 </launch>
