@@ -13,7 +13,8 @@ from nav_msgs.msg import Odometry # message type for odometry
 from std_msgs.msg import Float32
 from geometry_msgs.msg import Twist # message type for cmd_vel
 from sensor_msgs.msg import LaserScan # message type for scan
-from flocking.flocking import get_goal_orientation, constrain_angle, get_safe_range
+from flocking.boid import get_goal_orientation, constrain_angle
+from flocking.wall_avoider import get_safe_range
 
 # define a constant speed for the robot to travel at
 ROBOT_VELOCITY = 0.5
@@ -90,6 +91,7 @@ class Flocker:
 
     def _laser_callback(self, laser_message):
         """Worries about where the walls are"""
+        print("Received Scan!")
         self.orientation_range = get_safe_range(laser_message)
 
     def update_goals(self):
@@ -139,7 +141,6 @@ class Flocker:
 
 def main():
     """Main function."""
-
     # 1st. initialization of node.
     # TODO -- naming of node based on args
     rospy.init_node("flocker")

@@ -3,3 +3,6 @@ amcl
 build
 install
 log
+flocking/src/flocking/boid.pyc
+flocking/src/flocking/wall_avoider.pyc
+rosbot_description/

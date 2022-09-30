@@ -41,6 +41,9 @@ def get_goal_orientation(flock_positions, robot_index):
     4. Bias the direction of the force vector in the direction of alignment
     """
 
+    # TODO -- remove
+    return 0
+
     separation_term = (0.0, 0.0)
     separation_count = 0
 
