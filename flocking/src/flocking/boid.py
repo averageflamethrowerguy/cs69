@@ -21,11 +21,11 @@ def get_distance_between_boids(boid_pos_1, boid_pos_2):
 
 
 def constrain_angle(angle):
-    """Converts an arbitrary angle (in radians) between -2*pi and 2*pi into one between negative pi and pi"""
+    """Converts an arbitrary angle (in radians) between -2*pi and 2*pi into one between negative -pi and pi"""
     if angle > math.pi:
-        return angle - math.pi
+        return angle - 2*math.pi
     elif angle < -math.pi:
-        return angle + math.pi
+        return angle + 2*math.pi
     else:
         return angle
 
