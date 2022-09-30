@@ -42,7 +42,7 @@ def get_goal_orientation(flock_positions, robot_index):
     """
 
     # TODO -- remove
-    return 0
+    return math.pi / 2
 
     separation_term = (0.0, 0.0)
     separation_count = 0

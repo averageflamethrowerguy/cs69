@@ -6,7 +6,7 @@ and side length.
 - ROS -- tested on Melodic, but other versions may work.
 
 ## Configuration
-The number of sides, side length, and rotation direction are all determined by the launch file
+Launch files specify the world files and robots
 
 ## Build
 Once cloned in a ROS workspace, e.g., `ros_workspace/src/`, run the following commands to build it:
@@ -18,8 +18,9 @@ Once cloned in a ROS workspace, e.g., `ros_workspace/src/`, run the following co
 Run first the robot nodes or simulator. 
 Then, source and use the launch file:
 
-	source ros_workspace/install/setup.sh
-	roslaunch simple_shapes simple_shapes.launch
+	source catkin_ws/devel/setup.sh
+    roslaunch flocking gazebo_world.launch
+	roslaunch flocking flocking_gazebo.launch
 
 ## Attribution & Licensing
 

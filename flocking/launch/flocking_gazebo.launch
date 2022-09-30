@@ -1,34 +1,21 @@
 <launch>
-  <arg name="use_sim_time" default="true"/>
-  <param name="use_sim_time" value="$(arg use_sim_time)"/>
-
-    <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="world_name" value="$(find flocking)/worlds/wall.world"/>
-        <arg name="paused" value="false"/>
-        <arg name="use_sim_time" value="true"/>
-        <arg name="gui" value="true"/>
-        <arg name="headless" value="false"/>
-        <arg name="recording" value="false"/>
-        <arg name="debug" value="false"/>
-    </include>
-
     <!-- From here https://campus-rover.gitbook.io/lab-notebook/faq/spawn_multiple_robots -->
     <!-- Define arguments for the construction of the robots -->
     <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
     <arg name="robot_0_pos_x" default="0"/>
-    <arg name="robot_0_pos_y" default=" -0.5"/>
+    <arg name="robot_0_pos_y" default=" 0.5"/>
     <arg name="robot_0_pos_z" default=" 0.0"/>
-    <arg name="robot_0_yaw" default="0"/>
+    <arg name="robot_0_yaw" default="90"/>
 
     <arg name="robot_1_pos_x" default="0"/>
-    <arg name="robot_1_pos_y" default="0.5"/>
+    <arg name="robot_1_pos_y" default="-0.5"/>
     <arg name="robot_1_pos_z" default=" 0.0"/>
     <arg name="robot_1_yaw" default="45" />
 
     <arg name="robot_2_pos_x" default="0.5"/>
     <arg name="robot_2_pos_y" default="0.5"/>
     <arg name="robot_2_pos_z" default=" 0.0"/>
-    <arg name="robot_2_yaw" default="-45" />
+    <arg name="robot_2_yaw" default="135" />
 
     <!-- Define robot_0 -->
     <group ns="robot_0">
@@ -39,10 +26,10 @@
         </node>
         <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model robot_0 -x $(arg robot_0_pos_x) -y $(arg robot_0_pos_y) -z $(arg robot_0_pos_z)          -Y $(arg robot_0_yaw) -param robot_description" />
         <remap from="/cmd_vel" to="/robot_0/cmd_vel"/>
-        <remap from="/robot_0/scan" to="/scan"/>
+<!--         <remap from="/robot_0/scan" to="/scan"/> -->
         <param name="robot_count" value="3" />
         <param name="robot_index" value="0" />
-        <node pkg="flocking" type="flocker" name="flocker" output="screen" args />
+        <node pkg="flocking" type="flocker" name="flocker" output="screen" />
     </group>
 
     <!-- Define robot_1 -->

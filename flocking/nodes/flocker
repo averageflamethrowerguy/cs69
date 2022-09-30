@@ -37,10 +37,14 @@ class Flocker:
         # initialize odometry subscriber
         self.odom_subscriber = rospy.Subscriber("odom", Odometry, self.odometry_callback)
         # create a publisher to publish our own bot position
-        self.odom_publisher = rospy.publisher("flock_positions")
+        self.odom_publisher = rospy.Publisher("flock_positions", Odometry, queue_size=1)
 
         self._cmd_pub = rospy.Publisher("cmd_vel", Twist, queue_size=1)
-        self._laser_sub = rospy.Subscriber('scan', LaserScan, self._laser_callback, queue_size=1)
+        self._laser_sub = rospy.Subscriber("/robot_" + str(robot_index) + "/scan",
+                                           LaserScan,
+                                           self._laser_callback,
+                                           queue_size=1
+                                           )
 
         # create a subscriber to listen to other bot positions
         self.flock_pos_subscriber = rospy.Subscriber("flock_positions", Odometry, self.flock_pos_callback)
@@ -60,7 +64,7 @@ class Flocker:
         self.current_orientation = tf.transformations.euler_from_quaternion([pose.orientation.x, pose.orientation.y,
                                                                             pose.orientation.z, pose.orientation.w])[2]
         # manipulate the message so it's obvious who it comes from, then resend it
-        odom_message.child_frame_id = self.robot_index
+        odom_message.child_frame_id = str(self.robot_index)
         self.odom_publisher.publish(odom_message)
 
         self.update_goals()
@@ -88,7 +92,6 @@ class Flocker:
         # otherwise, update the array with the x,y,rz triple
         self.flock_positions[index] = (pose.position.x, pose.position.y, current_orientation)
 
-
     def _laser_callback(self, laser_message):
         """Worries about where the walls are"""
         print("Received Scan!")
@@ -98,6 +101,8 @@ class Flocker:
         """Given an initialized robot position and array of other robots, figure out where the robot should travel"""
         # get the desired orientation from the boid function
         goal_orientation = get_goal_orientation(self.flock_positions, self.robot_index)
+
+        # print("Orientation Range: " + str(self.orientation_range))
 
         # Handle two cases of angle -- safe orientation doesn't straddle pi, and it does
         # safe orientation doesn't straddle pi
