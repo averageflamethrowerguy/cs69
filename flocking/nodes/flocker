@@ -93,17 +93,29 @@ class Flocker:
         self.flock_positions[index] = (pose.position.x, pose.position.y, current_orientation)
 
     def _laser_callback(self, laser_message):
-        """Worries about where the walls are"""
+        """
+        Worries about where the walls are
+        The laser gets distances to walls in the laser frame of reference (NOT necessarily the robot...)
+        These need to be rotated by the robot frame to get the goal range
+        """
         # retrieves these in 0-2pi
         orientation_range = get_safe_range(laser_message)
-        self.orientation_range = (constrain_angle(orientation_range[0]), constrain_angle(orientation_range[1]))
+        constrained_orientation_range = (constrain_angle(orientation_range[0]), constrain_angle(orientation_range[1]))
+        # correct an odd bug when there are no obstacles
+        if constrained_orientation_range == (0., 0.):
+            self.orientation_range = (-math.pi, math.pi)
+            return
+        # convert rotation angles
+        self.orientation_range = (constrain_angle(constrained_orientation_range[0]+self.current_orientation),
+                                  constrain_angle(constrained_orientation_range[1]+self.current_orientation)
+                                  )
 
     def update_goals(self):
         """Given an initialized robot position and array of other robots, figure out where the robot should travel"""
         # get the desired orientation from the boid function
         goal_orientation = get_goal_orientation(self.flock_positions, self.robot_index)
 
-        print("Orientation Range: " + str(self.orientation_range))
+        # print("Orientation Range: " + str(self.orientation_range))
 
         # Handle two cases of angle -- safe orientation doesn't straddle pi, and it does
         # safe orientation doesn't straddle pi
