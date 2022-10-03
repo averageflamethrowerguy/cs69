@@ -196,8 +196,14 @@ def main():
     # Sleep for a few seconds to wait for the registration.
     rospy.sleep(2)
 
-    robot_count = rospy.get_param("robot_count")
-    robot_index = rospy.get_param("robot_index")
+    robot_count = 1
+    robot_index = 0
+    try:
+        robot_count = rospy.get_param("robot_count")
+        robot_index = rospy.get_param("robot_index")
+    finally:
+        # do nothing
+        print((robot_count, robot_index))
 
     # Initialization of the class for the shapes
     flocker = Flocker(robot_index, robot_count)
@@ -205,6 +211,7 @@ def main():
     # If interrupted, send a stop command.
     rospy.on_shutdown(flocker.stop)
 
+    print("Starting to drive the robot")
     # run the program
     flocker.drive()
 

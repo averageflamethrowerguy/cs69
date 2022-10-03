@@ -15,12 +15,20 @@ Once cloned in a ROS workspace, e.g., `ros_workspace/src/`, run the following co
     catkin_make
 	
 ## Run
+
+### GAZEBO
 Run first the robot nodes or simulator. 
 Then, source and use the launch file:
 
 	source catkin_ws/devel/setup.sh
     roslaunch flocking gazebo_world.launch
 	roslaunch flocking flocking_gazebo.launch
+
+### STAGE
+Then, source and use the launch file:
+
+	source catkin_ws/devel/setup.sh
+    roslaunch flocking stage_world.launch
 
 ## Attribution & Licensing
 
