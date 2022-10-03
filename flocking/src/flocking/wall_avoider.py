@@ -1,6 +1,6 @@
 import math # use of pi.
 
-AVOIDANCE_RANGE = 0.5
+AVOIDANCE_RANGE = 2
 NUM_SEGMENTS = 12
 
 
@@ -89,7 +89,9 @@ def get_safe_range(laserscan_information):
             break
 
     if bottom_range_size+top_range_size > largest_range_size:
-        return top_range[0], bottom_range[1]
+        largest_range_value = (top_range[0], bottom_range[1])
 
     return largest_range_value
+
+
 

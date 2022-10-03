@@ -1,13 +1,13 @@
 # Import of python modules.
 import math # use of pi.
 
-ROBOT_COHESION_RANGE = 3
-ROBOT_SEPARATION_RANGE = 0.5
-ROBOT_ALIGNMENT_RANGE = 3
+ROBOT_COHESION_RANGE = 5
+ROBOT_SEPARATION_RANGE = 1.5
+ROBOT_ALIGNMENT_RANGE = 5
 
 ROBOT_COHESION_INTENSITY = 0.25
-ROBOT_SEPARATION_INTENSITY = 0.75
-ROBOT_ALIGNMENT_INTENSITY = 0.15
+ROBOT_SEPARATION_INTENSITY = 1
+ROBOT_ALIGNMENT_INTENSITY = 0.45
 
 
 def get_direction_between_boids(boid_pos_1, boid_pos_2):
@@ -41,8 +41,8 @@ def get_goal_orientation(flock_positions, robot_index):
     4. Bias the direction of the force vector in the direction of alignment
     """
 
-    # TODO -- remove
-    return math.pi / 2
+    # # TODO -- remove
+    # return math.pi / 2
 
     separation_term = (0.0, 0.0)
     separation_count = 0
@@ -54,6 +54,7 @@ def get_goal_orientation(flock_positions, robot_index):
     alignment_count = 0
 
     robot_position = flock_positions[robot_index]
+    print(len(flock_positions), flock_positions)
 
     for i in range(len(flock_positions)):
         # ignore our own robot
@@ -91,7 +92,10 @@ def get_goal_orientation(flock_positions, robot_index):
     # use atan2 rather than atan to find the correct quadrant
     direction = math.atan2(force_vec[1], force_vec[0])
     # essentially taking the current angle and perturbing it
-    desired_alignment = constrain_angle(alignment_term / alignment_count + robot_position[2])
+    if alignment_count == 0:
+        desired_alignment = robot_position[2]
+    else:
+        desired_alignment = constrain_angle(alignment_term / alignment_count + robot_position[2])
 
     # calculate a weighted average of the force vec and desired_alignment
     return constrain_angle(

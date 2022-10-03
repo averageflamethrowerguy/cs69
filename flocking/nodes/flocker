@@ -1,25 +1,27 @@
 #!/usr/bin/env python
-#The line above is important so that this file is interpreted with Python when running it.
+# The line above is important so that this file is interpreted with Python when running it.
 # Flocker written by Elliot Potter
 # Sep 21, 2022, with other code used from last fall
 
 # Import of python modules.
-import math # use of pi.
-import tf # library for transformations.
+import math  # use of pi.
+import tf  # library for transformations.
 
 # import of relevant libraries.
-import rospy # module for ROS APIs
-from nav_msgs.msg import Odometry # message type for odometry
+import rospy  # module for ROS APIs
+from nav_msgs.msg import Odometry  # message type for odometry
 from std_msgs.msg import Float32
-from geometry_msgs.msg import Twist # message type for cmd_vel
-from sensor_msgs.msg import LaserScan # message type for scan
+from geometry_msgs.msg import Twist  # message type for cmd_vel
+from sensor_msgs.msg import LaserScan  # message type for scan
 from flocking.boid import get_goal_orientation, constrain_angle
 from flocking.wall_avoider import get_safe_range
 
 # define a constant speed for the robot to travel at
 ROBOT_VELOCITY = 0.5
-FREQUENCY = 10 #Hz.
-WALL_AVOID_RANGE = 2            # the range at which to start worrying about walls
+ROBOT_ROTATION_MULTIPLIER = 1.3
+FREQUENCY = 10  # Hz.
+WALL_AVOID_RANGE = 2  # the range at which to start worrying about walls
+WALL_SAFETY_ANGLE = math.pi / 4
 
 class Flocker:
     def __init__(self, robot_index, robot_count):
@@ -37,7 +39,17 @@ class Flocker:
         # initialize odometry subscriber
         self.odom_subscriber = rospy.Subscriber("odom", Odometry, self.odometry_callback)
         # create a publisher to publish our own bot position
-        self.odom_publisher = rospy.Publisher("flock_positions", Odometry, queue_size=1)
+        #self.odom_publisher = rospy.Publisher("flock_positions", Odometry, queue_size=1)
+
+        # create subscribers to all odom topics
+        self.flock_pos_subs = []
+        for i in range(self.robot_count):
+            if i == robot_index:
+                continue
+            self.flock_pos_subs.append(rospy.Subscriber("/robot_" + str(i) + "/odom",
+                                                        Odometry,
+                                                        self.flock_pos_callback
+                                                        ))
 
         self._cmd_pub = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self._laser_sub = rospy.Subscriber("/robot_" + str(robot_index) + "/scan",
@@ -47,7 +59,7 @@ class Flocker:
                                            )
 
         # create a subscriber to listen to other bot positions
-        self.flock_pos_subscriber = rospy.Subscriber("flock_positions", Odometry, self.flock_pos_callback)
+        #self.flock_pos_subscriber = rospy.Subscriber("flock_positions", Odometry, self.flock_pos_callback)
 
         # initialize the current and goal orientations, positions
         self.current_position = (0.0, 0.0)
@@ -62,11 +74,10 @@ class Flocker:
         pose = odom_message.pose.pose
         self.current_position = (pose.position.x, pose.position.y)
         self.current_orientation = tf.transformations.euler_from_quaternion([pose.orientation.x, pose.orientation.y,
-                                                                            pose.orientation.z, pose.orientation.w])[2]
+                                                                             pose.orientation.z, pose.orientation.w])[2]
+        self.flock_positions[self.robot_index] = (pose.position.x, pose.position.y, self.current_orientation)
         # manipulate the message so it's obvious who it comes from, then resend it
         odom_message.child_frame_id = str(self.robot_index)
-        self.odom_publisher.publish(odom_message)
-
         self.update_goals()
 
     @staticmethod
@@ -81,14 +92,17 @@ class Flocker:
 
     def flock_pos_callback(self, odom_message):
         """Updates the position of the member of the flock in the array"""
-        index = int(odom_message.child_frame_id)
+        index = int(odom_message.child_frame_id.replace("robot_", "").replace("/base_footprint", ""))
         # if we intercept our own message, return early
         if index == self.robot_index:
+            print(index, self.robot_index)
             return
 
         pose = odom_message.pose.pose
+
         current_orientation = tf.transformations.euler_from_quaternion([pose.orientation.x, pose.orientation.y,
                                                                         pose.orientation.z, pose.orientation.w])[2]
+
         # otherwise, update the array with the x,y,rz triple
         self.flock_positions[index] = (pose.position.x, pose.position.y, current_orientation)
 
@@ -98,23 +112,35 @@ class Flocker:
         The laser gets distances to walls in the laser frame of reference (NOT necessarily the robot...)
         These need to be rotated by the robot frame to get the goal range
         """
-        # retrieves these in 0-2pi
-        orientation_range = get_safe_range(laser_message)
-        constrained_orientation_range = (constrain_angle(orientation_range[0]), constrain_angle(orientation_range[1]))
-        # correct an odd bug when there are no obstacles
-        if constrained_orientation_range == (0., 0.):
-            self.orientation_range = (-math.pi, math.pi)
-            return
-        # convert rotation angles
-        self.orientation_range = (constrain_angle(constrained_orientation_range[0]+self.current_orientation),
-                                  constrain_angle(constrained_orientation_range[1]+self.current_orientation)
-                                  )
+        # # retrieves these in 0-2pi
+        # orientation_range = get_safe_range(laser_message)
+        # constrained_orientation_range = (constrain_angle(orientation_range[0]), constrain_angle(orientation_range[1]))
+        # # correct an odd bug when there are no obstacles
+        # if constrained_orientation_range == (0., 0.):
+        #     self.orientation_range = (-math.pi, math.pi)
+        #     return
+        # # convert rotation angles
+        # orientation_range = (constrain_angle(constrained_orientation_range[0] + self.current_orientation),
+        #                      constrain_angle(constrained_orientation_range[1] + self.current_orientation)
+        #                      )
+        # # narrow the range by 15 deg on a side
+        # if orientation_range[1] > orientation_range[0]:
+        #     self.orientation_range = (min(orientation_range[1], orientation_range[0] + WALL_SAFETY_ANGLE),
+        #                               max(orientation_range[0], orientation_range[1] - WALL_SAFETY_ANGLE))
+        # else:
+        #     # make the range on the back side of 0 and 1 larger
+        #     self.orientation_range = (constrain_angle(max(orientation_range[1],
+        #                                                   orientation_range[0] + WALL_SAFETY_ANGLE)),
+        #                               constrain_angle(min(orientation_range[0],
+        #                                                   orientation_range[1] - WALL_SAFETY_ANGLE))
+        #                               )
 
     def update_goals(self):
         """Given an initialized robot position and array of other robots, figure out where the robot should travel"""
         # get the desired orientation from the boid function
         goal_orientation = get_goal_orientation(self.flock_positions, self.robot_index)
 
+        print("Goal Orientation Pre Clip: " + str(goal_orientation))
         # print("Orientation Range: " + str(self.orientation_range))
 
         # Handle two cases of angle -- safe orientation doesn't straddle pi, and it does
@@ -140,6 +166,9 @@ class Flocker:
                     self.orientation_range[1]
                 )
 
+        print("Goal Orientation Post Clip: " + str(goal_orientation))
+        print("Current Orientation: " + str(self.current_orientation))
+
         # update the instance variables
         self.goal_orientation = goal_orientation
 
@@ -149,13 +178,14 @@ class Flocker:
         while not self.stopped:
             twist_msg = Twist()
             twist_msg.linear.x = ROBOT_VELOCITY
-            twist_msg.angular.z = self.goal_orientation - self.current_orientation
+            twist_msg.angular.z = (self.goal_orientation - self.current_orientation) * ROBOT_ROTATION_MULTIPLIER
             self._cmd_pub.publish(twist_msg)
             rate.sleep()
 
     def stop(self):
         """Stop the robot"""
         self.stopped = True
+
 
 def main():
     """Main function."""
@@ -177,7 +207,6 @@ def main():
 
     # run the program
     flocker.drive()
-
 
 
 if __name__ == "__main__":
