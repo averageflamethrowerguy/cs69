@@ -55,7 +55,8 @@ def get_safe_range(laserscan_information):
 
     """
     angle_range = laserscan_information.angle_max - laserscan_information.angle_min
-    index_increment_per_segment = int(angle_range / laserscan_information.angle_increment)
+    angle_per_segment = angle_range / NUM_SEGMENTS
+    index_increment_per_segment = int(angle_per_segment / laserscan_information.angle_increment)
 
     largest_range_size = 0.0
     largest_range_value = (0.0, 0.0)

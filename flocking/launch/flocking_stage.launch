@@ -7,6 +7,10 @@
         <param name="base_watchdog_timeout" value="0.2"/>
       </node>
 
+
+    <param name="is_stage" value="1" />
+
+
     <group ns="robot_0">
         <remap from="/cmd_vel" to="/robot_0/cmd_vel"/>
         <param name="robot_count" value="10" />

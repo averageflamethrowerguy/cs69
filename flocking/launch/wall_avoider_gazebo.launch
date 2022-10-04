@@ -17,6 +17,8 @@
     <arg name="robot_2_pos_z" default=" 0.0"/>
     <arg name="robot_2_yaw" default="135" />
 
+    <param name="is_stage" value="0" />
+
     <!-- Define robot_0 -->
     <group ns="robot_0">
         <param name="robot_description" command="$(find xacro)/xacro.py $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />

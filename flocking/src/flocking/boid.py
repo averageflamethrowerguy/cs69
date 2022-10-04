@@ -9,6 +9,7 @@ ROBOT_COHESION_INTENSITY = 0.45
 ROBOT_SEPARATION_INTENSITY = 5
 ROBOT_ALIGNMENT_INTENSITY = 0.25
 
+ROBOT_WALL_AVOID_INTENSITY = 10
 
 def get_direction_between_boids(boid_pos_1, boid_pos_2):
     """Gets the vector between boid_1 and boid_2"""
@@ -30,7 +31,7 @@ def constrain_angle(angle):
         return angle
 
 
-def get_goal_orientation(flock_positions, robot_index):
+def get_goal_orientation(flock_positions, robot_index, laser_force_vec):
     """
     Gets the goal orientation (in radians) for the robot to travel in
 
@@ -40,9 +41,6 @@ def get_goal_orientation(flock_positions, robot_index):
     3. Calculate the direction of the force vector
     4. Bias the direction of the force vector in the direction of alignment
     """
-
-    # # TODO -- remove
-    # return math.pi / 2
 
     separation_term = (0.0, 0.0)
     separation_count = 0
@@ -87,8 +85,13 @@ def get_goal_orientation(flock_positions, robot_index):
             alignment_term += ROBOT_ALIGNMENT_INTENSITY*(flock_positions[i][2] - robot_position[2])
             alignment_count += 1
 
+    print(separation_term)
+    print(cohesion_term)
+    print([ROBOT_WALL_AVOID_INTENSITY*laser_force_vec[0], ROBOT_WALL_AVOID_INTENSITY*laser_force_vec[1]])
+
     # calculate direction of force vec
-    force_vec = (separation_term[0]+cohesion_term[0], separation_term[1]+cohesion_term[1])
+    force_vec = (separation_term[0]+cohesion_term[0] + ROBOT_WALL_AVOID_INTENSITY*laser_force_vec[0],
+                 separation_term[1]+cohesion_term[1] + ROBOT_WALL_AVOID_INTENSITY*laser_force_vec[1])
     # use atan2 rather than atan to find the correct quadrant
     direction = math.atan2(force_vec[1], force_vec[0])
     # essentially taking the current angle and perturbing it
