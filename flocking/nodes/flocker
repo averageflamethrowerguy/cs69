@@ -92,7 +92,7 @@ class Flocker:
 
     def flock_pos_callback(self, odom_message):
         """Updates the position of the member of the flock in the array"""
-        index = int(odom_message.child_frame_id.replace("robot_", "").replace("/base_footprint", ""))
+        index = int(odom_message.header.frame_id.replace("robot_", "").replace("/odom", "").replace("/", ""))
         # if we intercept our own message, return early
         if index == self.robot_index:
             print(index, self.robot_index)
