@@ -19,6 +19,7 @@ from flocking.wall_avoider_2 import get_force_vec
 # define a constant speed for the robot to travel at
 ROBOT_VELOCITY = 0.5
 ROBOT_ROTATION_MULTIPLIER = 1.3
+MAX_ROT_VEL = math.pi
 FREQUENCY = 10  # Hz.
 WALL_AVOID_RANGE = 2  # the range at which to start worrying about walls
 WALL_SAFETY_ANGLE = math.pi / 4
@@ -124,7 +125,10 @@ class Flocker:
         while not self.stopped:
             twist_msg = Twist()
             twist_msg.linear.x = ROBOT_VELOCITY
-            twist_msg.angular.z = (self.goal_orientation - self.current_orientation) * ROBOT_ROTATION_MULTIPLIER
+            # cap velocities
+            twist_msg.angular.z = min(max(
+                (self.goal_orientation - self.current_orientation) * ROBOT_ROTATION_MULTIPLIER,
+                -MAX_ROT_VEL), MAX_ROT_VEL)
             self._cmd_pub.publish(twist_msg)
             rate.sleep()
 

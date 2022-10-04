@@ -28,7 +28,7 @@ Then, source and use the launch file:
 Then, source and use the launch file:
 
 	source catkin_ws/devel/setup.sh
-    roslaunch flocking stage_world.launch
+    roslaunch flocking flocking_stage.launch
 
 ## Attribution & Licensing
 
