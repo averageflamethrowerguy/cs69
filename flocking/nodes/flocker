@@ -23,6 +23,7 @@ MAX_ROT_VEL = math.pi
 FREQUENCY = 10  # Hz.
 WALL_AVOID_RANGE = 2  # the range at which to start worrying about walls
 WALL_SAFETY_ANGLE = math.pi / 4
+LASER_MEM_WEIGHT = 0.9 # how much to weight the memory vs new data
 
 class Flocker:
     def __init__(self, robot_index, robot_count, is_stage):
@@ -112,7 +113,11 @@ class Flocker:
         self.flock_positions[index] = (pose.position.x, pose.position.y, current_orientation)
 
     def _laser_callback(self, laser_message):
-        self.laser_force_vec = get_force_vec(laser_message, self.current_orientation)
+        laser_force_vec = get_force_vec(laser_message, self.current_orientation)
+        # do a weighted avg trick
+        self.laser_force_vec = [LASER_MEM_WEIGHT*self.laser_force_vec[0] + (1 - LASER_MEM_WEIGHT)*laser_force_vec[0],
+                                LASER_MEM_WEIGHT*self.laser_force_vec[1] + (1 - LASER_MEM_WEIGHT)*laser_force_vec[1]
+                                ]
 
     def update_goals(self):
         """Given an initialized robot position and array of other robots, figure out where the robot should travel"""

@@ -1,15 +1,15 @@
 # Import of python modules.
 import math # use of pi.
 
-ROBOT_COHESION_RANGE = 5
+ROBOT_COHESION_RANGE = 10
 ROBOT_SEPARATION_RANGE = 2
 ROBOT_ALIGNMENT_RANGE = 4
 
 ROBOT_COHESION_INTENSITY = 0.45
-ROBOT_SEPARATION_INTENSITY = 5
+ROBOT_SEPARATION_INTENSITY = 20
 ROBOT_ALIGNMENT_INTENSITY = 0.25
 
-ROBOT_WALL_AVOID_INTENSITY = 10
+ROBOT_WALL_AVOID_INTENSITY = 60
 
 def get_direction_between_boids(boid_pos_1, boid_pos_2):
     """Gets the vector between boid_1 and boid_2"""
@@ -52,7 +52,6 @@ def get_goal_orientation(flock_positions, robot_index, laser_force_vec):
     alignment_count = 0
 
     robot_position = flock_positions[robot_index]
-    print(len(flock_positions), flock_positions)
 
     for i in range(len(flock_positions)):
         # ignore our own robot
@@ -65,8 +64,9 @@ def get_goal_orientation(flock_positions, robot_index, laser_force_vec):
         # calculate separation part
         if distance < ROBOT_SEPARATION_RANGE:
             # robot steers away from other nearby robots
-            force_vec = (-ROBOT_SEPARATION_INTENSITY*distance*direction[0],
-                         -ROBOT_SEPARATION_INTENSITY*distance*direction[1])
+            # NOTE -- force should be greater as we approach the centroid
+            force_vec = (-ROBOT_SEPARATION_INTENSITY*(1/distance)*direction[0],
+                         -ROBOT_SEPARATION_INTENSITY*(1/distance)*direction[1])
             separation_term = (separation_term[0]+force_vec[0], separation_term[1]+force_vec[1])
             separation_count += 1
 
