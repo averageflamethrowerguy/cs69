@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- Full information here http://wiki.ros.org/catkin/package.xml -->
 <package format="2">
-  <name>simple_shapes</name>
+  <name>leader_follower</name>
   <version>0.1.0</version>
   <description>
     ROS package for moving the robot in simple shapes

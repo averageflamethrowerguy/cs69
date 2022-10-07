@@ -18,16 +18,20 @@ FREQUENCY = 10  # freq for publishing transforms
 
 
 class Broadcaster:
-    def __init__(self, robot_count):
+    def __init__(self):
         self.sub = rospy.Subscriber("/initialpose", PoseWithCoviarianceStamped, self.pose_callback)
         self.br = tf.TransformBroadcaster()
         self.robot_pos_array = []  # each will contain a dictionary { "frame_id": <frame_id>, "pose": <pose> }
 
     def pose_callback(self, pose_msg):
         """Either adds or updates the robot pose in the array"""
+        did_find = False
         for i in range(len(self.robot_pos_array)):
             if self.robot_pos_array[i]["frame_id"] == pose_msg.header.frame_id:
                 self.robot_pos_array[i]["pose"] = pose_msg.pose.pose
+                did_find = True
+        if did_find:
+            self.robot_pos_array.append({"frame_id": pose_msg.header.frame_id, "pose": pose_msg.pose.pose})
 
     def message_loop(self):
         """Message loop -- publishes transforms for each robot"""
@@ -47,5 +51,5 @@ class Broadcaster:
 if __name__ == '__main__':
     rospy.init_node('map_tf_broadcaster')
     robot_count_ext = rospy.get_param("robot_count")
-    caster = Broadcaster(robot_count_ext)
+    caster = Broadcaster()
     caster.message_loop()
