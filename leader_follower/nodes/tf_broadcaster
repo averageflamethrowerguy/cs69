@@ -11,7 +11,7 @@ import tf  # library for transformations.
 # import of relevant libraries.
 import rospy  # module for ROS APIs
 from std_msgs.msg import Float32
-from geometry_msgs.msg import PoseWithCoviarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped
 import tf
 
 FREQUENCY = 10  # freq for publishing transforms
@@ -19,13 +19,14 @@ FREQUENCY = 10  # freq for publishing transforms
 
 class Broadcaster:
     def __init__(self):
-        self.sub = rospy.Subscriber("/initialpose", PoseWithCoviarianceStamped, self.pose_callback)
+        self.sub = rospy.Subscriber("/initialpose", PoseWithCovarianceStamped, self.pose_callback)
         self.br = tf.TransformBroadcaster()
         self.robot_pos_array = []  # each will contain a dictionary { "frame_id": <frame_id>, "pose": <pose> }
 
     def pose_callback(self, pose_msg):
         """Either adds or updates the robot pose in the array"""
         did_find = False
+        print(pose_msg)
         for i in range(len(self.robot_pos_array)):
             if self.robot_pos_array[i]["frame_id"] == pose_msg.header.frame_id:
                 self.robot_pos_array[i]["pose"] = pose_msg.pose.pose
@@ -50,6 +51,5 @@ class Broadcaster:
 
 if __name__ == '__main__':
     rospy.init_node('map_tf_broadcaster')
-    robot_count_ext = rospy.get_param("robot_count")
     caster = Broadcaster()
     caster.message_loop()
