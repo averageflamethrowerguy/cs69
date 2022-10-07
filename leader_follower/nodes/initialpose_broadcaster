@@ -23,14 +23,14 @@ if __name__ == '__main__':
     orientation = rospy.get_param("orientation")
     robot_num = rospy.get_param("robot_index")
 
-    pub = rospy.Publisher("/initialpose", PoseWithCovarianceStamped)
+    pub = rospy.Publisher("/initialpose", PoseWithCovarianceStamped, queue_size=1)
     msg = PoseWithCovarianceStamped()
-    msg.header.frame_id = robot_num
+    msg.header.frame_id = str(robot_num)
     msg.pose.pose.position.x = x
     msg.pose.pose.position.y = y
     msg.pose.pose.position.z = 0
 
-    quaternion = tf.transformations.quaternion_from_euler((0, 0, orientation))
+    quaternion = tf.transformations.quaternion_from_euler(0, 0, orientation)
     msg.pose.pose.orientation.x = quaternion[0]
     msg.pose.pose.orientation.y = quaternion[1]
     msg.pose.pose.orientation.z = quaternion[2]
@@ -38,5 +38,5 @@ if __name__ == '__main__':
 
     rate = rospy.Rate(FREQUENCY)
     while not rospy.is_shutdown():
-        pub.publish(quaternion)
+        pub.publish(msg)
         rate.sleep()

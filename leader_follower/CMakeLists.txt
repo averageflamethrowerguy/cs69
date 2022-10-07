@@ -55,6 +55,7 @@ include_directories(
 
 catkin_install_python(PROGRAMS 
   nodes/tf_broadcaster
+  nodes/initialpose_broadcaster
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

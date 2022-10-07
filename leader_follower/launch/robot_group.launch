@@ -23,14 +23,13 @@
 
     <!-- Define robot_0 -->
     <group ns="robot_0">
-        <remap from="/initialpose" to="/robot_0/initialpose"/>
         <param name="robot_count" value="3" />
         <param name="robot_index" value="0" />
         <param name="x" value="$(arg robot_0_pos_x)" />
         <param name="y" value="$(arg robot_0_pos_y)" />
         <param name="orientation" value="$(arg robot_0_yaw)" />
 
-        <node pkg="leader_follower" type="leader_follower" name="initialpose_broadcaster" output="screen" />
+        <node pkg="leader_follower" type="initialpose_broadcaster" name="initialpose_broadcaster" output="screen" />
         <param name="robot_description" command="$(find xacro)/xacro.py $(find leader_follower)/urdf/turtlebot3_waffle_pi.urdf.xacro" />
         <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
             <param name="publish_frequency" type="double" value="50.0" />
@@ -44,14 +43,13 @@
 
 <!--     Define robot_1 -->
     <group ns="robot_1">
-        <remap from="/initialpose" to="/robot_1/initialpose"/>
         <param name="robot_count" value="3" />
         <param name="robot_index" value="1" />
         <param name="x" value="$(arg robot_1_pos_x)" />
         <param name="y" value="$(arg robot_1_pos_y)" />
         <param name="orientation" value="$(arg robot_1_yaw)" />
 
-        <node pkg="leader_follower" type="leader_follower" name="initialpose_broadcaster" output="screen" />
+        <node pkg="leader_follower" type="initialpose_broadcaster" name="initialpose_broadcaster" output="screen" />
         <param name="robot_description" command="$(find xacro)/xacro.py $(find leader_follower)/urdf/turtlebot3_waffle_pi.urdf.xacro" />
         <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
             <param name="publish_frequency" type="double" value="50.0" />
@@ -65,13 +63,13 @@
 
 <!--     Define robot_2 -->
     <group ns="robot_2">
-        <remap from="/initialpose" to="/robot_2/initialpose"/>
         <param name="robot_count" value="3" />
         <param name="robot_index" value="2" />
         <param name="x" value="$(arg robot_2_pos_x)" />
         <param name="y" value="$(arg robot_2_pos_y)" />
         <param name="orientation" value="$(arg robot_2_yaw)" />
 
+        <node pkg="leader_follower" type="initialpose_broadcaster" name="initialpose_broadcaster" output="screen" />
         <param name="robot_description" command="$(find xacro)/xacro.py $(find leader_follower)/urdf/turtlebot3_waffle_pi.urdf.xacro" />
         <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
             <param name="publish_frequency" type="double" value="50.0" />
