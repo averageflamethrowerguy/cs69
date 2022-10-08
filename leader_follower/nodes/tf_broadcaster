@@ -26,12 +26,11 @@ class Broadcaster:
     def pose_callback(self, pose_msg):
         """Either adds or updates the robot pose in the array"""
         did_find = False
-        print(pose_msg)
         for i in range(len(self.robot_pos_array)):
             if self.robot_pos_array[i]["frame_id"] == pose_msg.header.frame_id:
                 self.robot_pos_array[i]["pose"] = pose_msg.pose.pose
                 did_find = True
-        if did_find:
+        if not did_find:
             self.robot_pos_array.append({"frame_id": pose_msg.header.frame_id, "pose": pose_msg.pose.pose})
 
     def message_loop(self):
@@ -43,8 +42,8 @@ class Broadcaster:
                 self.br.sendTransform((pose.position.x, pose.position.y, pose.position.z),
                                       (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w),
                                       rospy.Time.now(),
-                                      "world",
-                                      robot["frame_id"]
+                                      "robot_" + robot["frame_id"] + "/odom",
+                                      "/world"
                                       )
                 rate.sleep()
 
