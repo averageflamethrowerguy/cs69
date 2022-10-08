@@ -9,14 +9,21 @@ import tf  # library for transformations
 import rospy  # module for ROS APIs
 from std_msgs.msg import String
 import json
-
+from leader_follower.srv import RequestFollowers
 
 class RobotFollower:
-    def __init__(self):
+    def __init__(self, bot_id):
+        self.bot_id = bot_id
+        self.follower_listener = rospy.Subscriber("/subscribe_request", String, self.follower_callback)
+        self.has_followed = False
 
-# TODO -- subscriber for custom msg
+    def follower_callback(self, msg):
+        """When we receive a follower request, we call the service with our name"""
+        registry_name = msg.data
+        self.has_followed = True
+        follow = rospy.ServiceProxy(registry_name, RequestFollowers)
+        follow("robot_" + self.bot_id)
 
-# TODO -- ROS service client
 
 # TODO -- ROS action server
 

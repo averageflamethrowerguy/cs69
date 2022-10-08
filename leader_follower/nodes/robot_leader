@@ -63,6 +63,9 @@ class RobotLeader:
             min_distance_bot = ""
             min_distance_point = (0, 0)
             for bot in [*self.follower_array, self.bot_name]:
+                if bot in used_robots:
+                    continue
+
                 # convert the point into bot coords
                 (trans, rot) = self.listener.lookupTransform('world', bot + '/base_link', rospy.Time(0))
                 t = tf.transformations.translation_matrix(trans)
@@ -88,8 +91,10 @@ class RobotLeader:
                     min_distance_point = (target_np[0], target_np[1])
 
             waypoint_robot_pairs.append((min_distance_bot, min_distance_point))
+            used_robots.append(min_distance_bot)
 
         # TODO -- action client to assign goals to followers
+        # TODO -- trigger the leader to drive to the point
 
 
 if __name__ == "__main__":
