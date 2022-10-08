@@ -13,6 +13,7 @@ import numpy
 from leader_follower.msg import FollowerReq
 from leader_follower.srv import RequestFollowers, RequestFollowersResponse
 from leader_follower.msg._DriveToTargetAction import DriveToTargetAction
+from leader_follower.msg._DriveToTargetGoal import DriveToTargetGoal
 from leader_follower.simple_motion import SimpleMotion
 import actionlib
 
@@ -86,7 +87,8 @@ class RobotLeader:
                     continue
 
                 # convert the point into bot coords
-                (trans, rot) = self.listener.lookupTransform('world', bot + '/base_link', rospy.Time(0))
+                print("Looking up transform between /world and " + bot + '/base_footprint')
+                (trans, rot) = self.listener.lookupTransform(bot + '/base_footprint', '/world', rospy.Time(0))
                 t = tf.transformations.translation_matrix(trans)
                 R = tf.transformations.quaternion_matrix(rot)
 
@@ -95,13 +97,8 @@ class RobotLeader:
                     numpy.array([point[0], point[1], 0, 1])
                 )
 
-                # convert 0,0 into bot coords
-                robot_np = world_T_baselink.dot(
-                    numpy.array([point[0], point[1], 0, 1])
-                )
-
-                # calculate distance between the two
-                distance = math.sqrt(math.pow(target_np[0]-robot_np[0], 2) + math.pow(target_np[1]-robot_np[1], 2))
+                # calculate distance between the target and the bot (which is at 0, 0)
+                distance = math.sqrt(math.pow(target_np[0], 2) + math.pow(target_np[1], 2))
 
                 # evaluate if this bot is closer than previous closest
                 if distance < min_distance:
@@ -109,16 +106,18 @@ class RobotLeader:
                     min_distance_bot = bot
                     min_distance_point = (target_np[0], target_np[1])
 
-            waypoint_robot_pairs.append((min_distance_bot, min_distance_point))
+            waypoint_robot_pairs.append((min_distance_bot, min_distance_point, point))
             used_robots.append(min_distance_bot)
 
         print("Pairs: " + str(waypoint_robot_pairs))
         self.ready_for_next_drive = False
         client_list = []
         leader_coords = (0, 0)
+        leader_coords_world = (0, 0)
         for pair in waypoint_robot_pairs:
             if pair[0] == self.bot_name:
                 leader_coords = pair[1]
+                leader_coords_world = pair[2]
                 continue
 
             server_loc = "/drive_" + pair[0]
@@ -127,11 +126,12 @@ class RobotLeader:
             client.wait_for_server()
             print("Found action server at " + server_loc)
             # set x,y for the goal
-            goal = DriveToTargetAction(pair[1][0], pair[1][1])
+            goal = DriveToTargetGoal(pair[1][0], pair[1][1])
             client.send_goal(goal)
             client_list.append(client)
 
         # trigger the leader to drive to the point
+        print("driving leader to " + str(leader_coords_world) + ", or " + str(leader_coords) + " in leader coords")
         self.drive_leader(leader_coords[0], leader_coords[1])
 
         # wait for all callbacks
@@ -157,7 +157,12 @@ if __name__ == "__main__":
     rospy.init_node('robot_leader')
     robot_index = rospy.get_param("robot_index")
     leader = RobotLeader(robot_index)
+
     rospy.sleep(2)
     leader.send_request_to_followers()
-    leader.allocate_goals_robots()
+
+    # loop, allocating goals to robots
+    while not rospy.is_shutdown():
+        leader.allocate_goals_robots()
+        rospy.sleep(2)
 
