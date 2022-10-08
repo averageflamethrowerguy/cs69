@@ -1,4 +1,5 @@
 ## For full information http://wiki.ros.org/catkin/CMakeLists.txt 
+# Used this tutorial to compile actions: https://roboticsbackend.com/ros-create-custom-action/
 
 #############################################################################
 ## Set minimum required version of cmake, project name and compile options ##
@@ -12,6 +13,8 @@ project(leader_follower)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   geometry_msgs
+  actionlib_msgs
+  std_msgs
   message_generation
 )
 
@@ -45,11 +48,12 @@ add_service_files(
 
 add_action_files(
   FILES
-
+  DriveToTarget.action
 )
 
 generate_messages(
   DEPENDENCIES
+  actionlib_msgs
   std_msgs
 )
 
@@ -78,6 +82,9 @@ include_directories(
 catkin_install_python(PROGRAMS 
   nodes/tf_broadcaster
   nodes/initialpose_broadcaster
+  nodes/robot_leader
+  nodes/robot_follower
+  nodes/waypoint_broadcaster
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

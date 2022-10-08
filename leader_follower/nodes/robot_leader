@@ -12,7 +12,7 @@ import json
 import numpy
 from leader_follower.msg import FollowerReq
 from leader_follower.srv import RequestFollowers, RequestFollowersResponse
-from leader_follower.action import DriveToTarget
+# from leader_follower.msg import DriveToTarget
 from leader_follower.leader_follower import SimpleMotion
 import actionlib
 
@@ -43,6 +43,7 @@ class RobotLeader:
 
     def send_request_to_followers(self):
         """send request to robot followers for them to sign up"""
+        print("Sending follower request")
         req = FollowerReq()
         req.service_name = REGISTERY_NAME
         self.follower_requester.publish(req)
@@ -50,6 +51,7 @@ class RobotLeader:
     def handle_request_followers(self, req):
         """Adds follower to the follower array"""
         name = req.robot_name
+        print("Received follower service message from robot " + name)
         if name not in self.follower_array:
             self.follower_array.append(name)
 

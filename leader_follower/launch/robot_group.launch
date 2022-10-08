@@ -19,6 +19,7 @@
 
     <param name="is_stage" value="0" />
 
+    <!-- Broadcasts the tfs for each robot -->
     <node pkg="leader_follower" type="tf_broadcaster" name="tf_broadcaster" output="screen" />
 
     <!-- Define robot_0 -->
@@ -38,7 +39,7 @@
         <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model robot_0 -x $(arg robot_0_pos_x) -y $(arg robot_0_pos_y) -z $(arg robot_0_pos_z)          -Y $(arg robot_0_yaw) -param robot_description" />
         <remap from="/cmd_vel" to="/robot_0/cmd_vel"/>
 <!--         <remap from="/robot_0/scan" to="/scan"/> -->
-<!--         <node pkg="leader_follower" type="leader_follower" name="robot_leader" output="screen" /> -->
+        <node pkg="leader_follower" type="robot_leader" name="robot_leader" output="screen" />
     </group>
 
 <!--     Define robot_1 -->
@@ -58,7 +59,7 @@
         <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model robot_1 -x $(arg robot_1_pos_x) -y $(arg robot_1_pos_y) -z $(arg robot_1_pos_z)          -Y $(arg robot_1_yaw) -param robot_description" />
         <remap from="/cmd_vel" to="/robot_1/cmd_vel"/>
         <!--         <remap from="/robot_1/scan" to="/scan"/> -->
-<!--         <node pkg="leader_follower" type="leader_follower" name="robot_follower" output="screen" /> -->
+        <node pkg="leader_follower" type="robot_follower" name="robot_follower" output="screen" />
     </group>
 
 <!--     Define robot_2 -->
@@ -80,7 +81,7 @@
         <!--         <remap from="/robot_0/scan" to="/scan"/> -->
         <param name="robot_count" value="3" />
         <param name="robot_index" value="2" />
-<!--         <node pkg="leader_follower" type="leader_follower" name="robot_follower" output="screen" /> -->
+        <node pkg="leader_follower" type="robot_follower" name="robot_follower" output="screen" />
     </group>
 
 </launch>

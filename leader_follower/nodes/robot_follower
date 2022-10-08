@@ -10,7 +10,7 @@ import rospy  # module for ROS APIs
 from std_msgs.msg import String
 import json
 from leader_follower.srv import RequestFollowers
-from leader_follower.action import DriveToTarget
+# from leader_follower.msg import DriveToTarget
 from leader_follower.leader_follower import SimpleMotion
 import actionlib
 
@@ -21,15 +21,18 @@ class RobotFollower:
         self.bot_id = bot_id
         self.follower_listener = rospy.Subscriber("/subscribe_request", String, self.follower_callback)
         self.has_followed = False
-        self.action_server = actionlib.SimpleActionServer(self.action_name,
-                                                          DriveToTarget,
-                                                          execute_cb=self.execute_cb,
-                                                          auto_start=False)
+        # self.action_server = actionlib.SimpleActionServer(self.action_name,
+        #                                                   DriveToTarget,
+        #                                                   execute_cb=self.execute_cb,
+        #                                                   auto_start=False)
         self.is_driving = False
 
     def follower_callback(self, msg):
         """When we receive a follower request, we call the service with our name"""
+        if self.has_followed:
+            return
         registry_name = msg.data
+        print("Received follower request; following on topic " + registry_name)
         self.has_followed = True
         follow = rospy.ServiceProxy(registry_name, RequestFollowers)
         follow("robot_" + self.bot_id)
