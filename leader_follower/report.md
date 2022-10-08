@@ -1,20 +1,43 @@
 # CS 69.13, Fall 2022, Elliot Potter
 
 ## Method Description
-This program is a modified version of the simple_motion program that you provided to us. I decided to import that program as a library, and then write a
-separate class to handle subscribing to odometry and publishing error messages. 
-My program essentially is a for-loop where the robot drives forward, then rotates by 360 deg / num_sides. It accepts parameters from the launch file, and 
-these determine the size of polygon, number of sides, and direction of travel.
+This system is decomposed into six core Python files:
 
-The package is structured around a single node, which implements both the simple_shapes class as well as the driver function. I chose not to separate the
-class from the driver because placing the class in the `./src/simple_shapes` folder meant that it could not access the `simple_motion.py` module. There is
-probably a solution to this, but I'm leaving that as a todo. The package also has three launch files for different shapes, which I decided was a more 
-intuitive way of drawing shapes than passing in command-line arguments.
+### initialpose_broadcaster
+For each robot, this broadcasts the robot's initial pose, so that tf_broadcaster can sniff it.
+
+### tf_broadcaster
+This takes those poses and publishes transforms to them from the world frame (validated in rviz)
+
+### waypoint_broadcaster
+This publishes the waypoints that the robot needs to visit
+
+### simple_motion
+I wrote most of this last fall. It basically just has code to rotate to and drive to a point. (I didn't want to re-write
+this, because I already did all the debugging work last year)
+
+### robot_follower
+The follower has two main behaviors:
+``` 
+1. It listens to requests for followers, and replies on that respective service with its own name
+2. It instantiates an action server, and drives to the specified point if it is requested to do so (using simple_motion)
+```
+
+### robot_leader
+The leader does the following:
+``` 
+1. It listens to the waypoints channel, and sets waypoints that robots should visit
+2. It requests that robots sign up using its service -- it publishes this service's name on the '/request_followers' topic
+3. It listens to the service, adding robot names to a list of followers
+4. When it has both waypoints and followers, and waypoints==followers+1, it allocates waypoints to followers and itself
+    Essentially, for each waypoint, it finds the closest follower (or itself).
+    This is a very greedy algorithm.
+5. It then tells each follower (via an action client) to drive to a selected location, and it drives itself to another one.
+```
 
 ## Evaluation
-This program worked fine. I essentially wrote it without testing it, and it pretty much worked as soon as I was able to get the file to run. The only unexpected issue was issues with the robot driving clockwise and counterclockwise -- I had to reverse the robot's rotation direction if it drove
-clockwise.
-
-I had the most difficulty figuring out the configuration of the package -- I ended up iteratively converting simple_motion into the final package so that
-I knew exactly what was preventing the build. I ended up with a set of rules around creating ROS packages (not included in this zip).
+This system worked pretty well. The final robot positions were a little off (less than 1m), but I think this was just
+an issue with accuracy in my driving code. If I used a PID or some other system with feedback, this would have worked 
+better. I had some difficulty with importing all my messages, actions and services, but fortunately I figured everything
+out (with your help :) )
 

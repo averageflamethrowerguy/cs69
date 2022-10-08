@@ -1,12 +1,13 @@
-# simple_shapes ROS package
-This ROS package drives the robot in a pattern corresponding to a regular polygon, with specified number of sides
-and side length.
+# leader_follower ROS package
+This ROS package corresponds to PA3. It has a leader robot that controls some number of followers, and greedily assigns
+them to visit points.
 
 ## Requirements
 - ROS -- tested on Melodic, but other versions may work.
 
 ## Configuration
-The number of sides, side length, and rotation direction are all determined by the launch file
+The number of robots and their locations are determined by `robot_group.launch`. The positions to visit are determined
+by `./nodes/waypoint_broadcaster`
 
 ## Build
 Once cloned in a ROS workspace, e.g., `ros_workspace/src/`, run the following commands to build it:
@@ -15,11 +16,15 @@ Once cloned in a ROS workspace, e.g., `ros_workspace/src/`, run the following co
     catkin_make
 	
 ## Run
-Run first the robot nodes or simulator. 
-Then, source and use the launch file:
+Terminal 1
+
+    source ros_workspace/install/setup.sh
+    roslaunch leader_follower empty_world.launch
+
+Terminal 2
 
 	source ros_workspace/install/setup.sh
-	roslaunch simple_shapes simple_shapes.launch
+	roslaunch leader_follower robot_group.launch
 
 ## Attribution & Licensing
 
