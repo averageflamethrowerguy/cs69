@@ -24,7 +24,7 @@ if __name__ == '__main__':
     pub = rospy.Publisher("/waypoints", String, queue_size=1)
     msg = String()
 
-    msg.data = json.dumps([(1, 1), (0, 3), (-2, -3)])
+    msg.data = json.dumps([(3, 4), (0, 3), (-2, -3)])
 
     rate = rospy.Rate(FREQUENCY)
     while not rospy.is_shutdown():

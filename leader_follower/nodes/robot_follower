@@ -34,13 +34,14 @@ class RobotFollower:
         if self.has_followed:
             return
         service_name = msg.service_name
-        print("Received follower request; following on topic " + service_name)
+        print("robot_" + str(self.bot_id) + " received follower request; following on topic " + service_name)
         self.has_followed = True
         follow = rospy.ServiceProxy(service_name, RequestFollowers)
         follow("robot_" + str(self.bot_id))
 
     def execute_cb(self, msg):
         """Drives the robot to the target"""
+        print("robot_" + str(self.bot_id) + " received a drive command")
         if self.is_driving:
             return
 
