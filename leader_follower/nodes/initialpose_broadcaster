@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # The line above is important so that this file is interpreted with Python when running it.
-# tf_broadcaster, written by Elliot Potter
+# initialpose_broadcaster, written by Elliot Potter
 # Oct 2022, with other code used from last fall
 
 # Import of python modules.
