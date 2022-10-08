@@ -25,7 +25,7 @@ class SimpleShapes:
         # initialize an instance of SimpleMotion because it isn't stateless...
         self.simple_motion = SimpleMotion()
         # initialize odometry subscriber
-        self.odom_subscriber = rospy.Subscriber("odom", Odometry, self.odometry_callback )
+        self.odom_subscriber = rospy.Subscriber("odom", Odometry, self.odometry_callback)
         self.float32_pub = rospy.Publisher("error", Float32, queue_size = 1)
         self.actual_loc = (0, 0)
         self.actual_orientation = 0
