@@ -9,6 +9,7 @@ import tf  # library for transformations
 import rospy  # module for ROS APIs
 from std_msgs.msg import String
 import json
+import numpy
 from leader_follower.msg import FollowerReq
 from leader_follower.srv import RequestFollowers, RequestFollowersResponse
 
@@ -16,9 +17,13 @@ REGISTERY_NAME = "register_followers"
 
 
 class RobotLeader:
-    def __init__(self):
+    def __init__(self, bot_id):
+        self.bot_name = "robot_" + bot_id
         self.waypoint_callback = rospy.Subscriber("/waypoints", String, self.waypoint_callback)
         self.follower_requester = rospy.Publisher("/subscribe_request", FollowerReq, queue_size=1)
+        # Setting up transformation listener.
+        self.listener = tf.TransformListener()
+
         # the array of points that the followers could go to
         self.waypoint_array = []
         # the array of follower points
@@ -47,15 +52,50 @@ class RobotLeader:
         Waits until goals have been received, and number of goals equals number of robots
         Then greedily assigns robots to goals
         """
+        while len(self.waypoint_array) == 0 or len(self.follower_array) != len(self.waypoint_array):
+            rospy.sleep(1)
 
-# TODO -- allocate robots to waypoints
+        # loop over waypoints, pairing them with the closest robot
+        used_robots = []
+        waypoint_robot_pairs = []
+        for point in self.waypoint_array:
+            min_distance = math.inf
+            min_distance_bot = ""
+            min_distance_point = (0, 0)
+            for bot in [*self.follower_array, self.bot_name]:
+                # convert the point into bot coords
+                (trans, rot) = self.listener.lookupTransform('world', bot + '/base_link', rospy.Time(0))
+                t = tf.transformations.translation_matrix(trans)
+                R = tf.transformations.quaternion_matrix(rot)
 
-# TODO -- action client to assign goals to followers
+                world_T_baselink = t.dot(R)
+                target_np = world_T_baselink.dot(
+                    numpy.array([point[0], point[1], 0, 1])
+                )
+
+                # convert 0,0 into bot coords
+                robot_np = world_T_baselink.dot(
+                    numpy.array([point[0], point[1], 0, 1])
+                )
+
+                # calculate distance between the two
+                distance = math.sqrt(math.pow(target_np[0]-robot_np[0], 2) + math.pow(target_np[1]-robot_np[1], 2))
+
+                # evaluate if this bot is closer than previous closest
+                if distance < min_distance:
+                    min_distance = distance
+                    min_distance_bot = bot
+                    min_distance_point = (target_np[0], target_np[1])
+
+            waypoint_robot_pairs.append((min_distance_bot, min_distance_point))
+
+        # TODO -- action client to assign goals to followers
 
 
 if __name__ == "__main__":
     rospy.init_node('robot_leader')
-    leader = RobotLeader()
+    robot_index = rospy.get_param("robot_index")
+    leader = RobotLeader(robot_index)
     rospy.sleep(2)
     leader.send_request_to_followers()
     leader.allocate_goals_robots()

@@ -18,15 +18,13 @@ MIN_THRESHOLD_DISTANCE = 0.5 # m, threshold distance.
 DEFAULT_CMD_VEL_TOPIC = 'cmd_vel'
 DEFAULT_SCAN_TOPIC = 'scan'
 
-class SimpleMotion():
+
+class SimpleMotion:
     def __init__(self, linear_velocity=LINEAR_VELOCITY, angular_velocity=ANGULAR_VELOCITY):
         """Constructor."""
 
         # Setting up publishers/subscribers.
         self._cmd_pub = rospy.Publisher(DEFAULT_CMD_VEL_TOPIC, Twist, queue_size=1)
-
-        # Setting up subscriber.
-        self._laser_sub = rospy.Subscriber(DEFAULT_SCAN_TOPIC, LaserScan, self._laser_callback, queue_size=1)
 
         # Other variables.
         self.linear_velocity = linear_velocity # Constant linear velocity set.
@@ -110,12 +108,8 @@ class SimpleMotion():
         # Fortunately, this is fixed in Python 3.
         angle = math.atan2(difference[1], difference[0])
 
-        # we find the current orientation w.r.t the initial orientiation of the robot
-        # (the initial orientation is when the robot begins the polygon)
-        current_orientation = tf.transformations.euler_from_quaternion(self.orientation)[2] - initial_orientation
-
         # We find the angle to rotate and calculate the modulo so we don't spin in a circle
-        angle_to_rotate = (angle - current_orientation) % ( 2 * math.pi )
+        angle_to_rotate = (angle - initial_orientation) % ( 2 * math.pi )
         # we do the faster rotation if the angle is more than 180 degrees
         if angle_to_rotate > math.pi:
             angle_to_rotate = angle_to_rotate - ( 2 * math.pi )
