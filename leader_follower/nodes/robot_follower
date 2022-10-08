@@ -9,33 +9,35 @@ import tf  # library for transformations
 import rospy  # module for ROS APIs
 from std_msgs.msg import String
 import json
+from leader_follower.msg import FollowerReq
 from leader_follower.srv import RequestFollowers
-# from leader_follower.msg import DriveToTarget
-from leader_follower.leader_follower import SimpleMotion
+from leader_follower.msg._DriveToTargetAction import DriveToTargetAction
+from leader_follower.simple_motion import SimpleMotion
 import actionlib
 
 
 class RobotFollower:
     def __init__(self, bot_id):
-        self.action_name = "drive_robot_" + str(bot_id)
+        self.action_name = "/drive_robot_" + str(bot_id)
         self.bot_id = bot_id
-        self.follower_listener = rospy.Subscriber("/subscribe_request", String, self.follower_callback)
+        self.follower_listener = rospy.Subscriber("/subscribe_request", FollowerReq, self.follower_callback)
         self.has_followed = False
-        # self.action_server = actionlib.SimpleActionServer(self.action_name,
-        #                                                   DriveToTarget,
-        #                                                   execute_cb=self.execute_cb,
-        #                                                   auto_start=False)
+        self.action_server = actionlib.SimpleActionServer(self.action_name,
+                                                          DriveToTargetAction,
+                                                          execute_cb=self.execute_cb,
+                                                          auto_start=False)
+        self.action_server.start()
         self.is_driving = False
 
     def follower_callback(self, msg):
         """When we receive a follower request, we call the service with our name"""
         if self.has_followed:
             return
-        registry_name = msg.data
-        print("Received follower request; following on topic " + registry_name)
+        service_name = msg.service_name
+        print("Received follower request; following on topic " + service_name)
         self.has_followed = True
-        follow = rospy.ServiceProxy(registry_name, RequestFollowers)
-        follow("robot_" + self.bot_id)
+        follow = rospy.ServiceProxy(service_name, RequestFollowers)
+        follow("robot_" + str(self.bot_id))
 
     def execute_cb(self, msg):
         """Drives the robot to the target"""

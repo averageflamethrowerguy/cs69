@@ -21,6 +21,7 @@
 
     <!-- Broadcasts the tfs for each robot -->
     <node pkg="leader_follower" type="tf_broadcaster" name="tf_broadcaster" output="screen" />
+    <node pkg="leader_follower" type="waypoint_broadcaster" name="waypoint_broadcaster" output="screen" />
 
     <!-- Define robot_0 -->
     <group ns="robot_0">

@@ -21,8 +21,6 @@ FREQUENCY = 10  # freq for publishing transforms
 
 if __name__ == '__main__':
     rospy.init_node('waypoint_node')
-    orientation = rospy.get_param("num_robots")
-
     pub = rospy.Publisher("/waypoints", String, queue_size=1)
     msg = String()
 

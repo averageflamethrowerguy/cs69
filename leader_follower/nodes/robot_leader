@@ -12,16 +12,16 @@ import json
 import numpy
 from leader_follower.msg import FollowerReq
 from leader_follower.srv import RequestFollowers, RequestFollowersResponse
-# from leader_follower.msg import DriveToTarget
-from leader_follower.leader_follower import SimpleMotion
+from leader_follower.msg._DriveToTargetAction import DriveToTargetAction
+from leader_follower.simple_motion import SimpleMotion
 import actionlib
 
-REGISTERY_NAME = "register_followers"
+REGISTERY_NAME = "/register_followers"
 
 
 class RobotLeader:
     def __init__(self, bot_id):
-        self.bot_name = "robot_" + bot_id
+        self.bot_name = "robot_" + str(bot_id)
         self.waypoint_callback = rospy.Subscriber("/waypoints", String, self.waypoint_callback)
         self.follower_requester = rospy.Publisher("/subscribe_request", FollowerReq, queue_size=1)
         # Setting up transformation listener.
@@ -54,26 +54,34 @@ class RobotLeader:
         print("Received follower service message from robot " + name)
         if name not in self.follower_array:
             self.follower_array.append(name)
+        # return success message
+        return RequestFollowersResponse(1)
 
     def allocate_goals_robots(self):
         """
         Waits until goals have been received, and number of goals equals number of robots
         Then greedily assigns robots to goals
         """
+
+        # wait until we have waypoints and enough robots to cover them
         while (len(self.waypoint_array) == 0 or
-               len(self.follower_array) != len(self.waypoint_array) or not
+               len(self.follower_array)+1 != len(self.waypoint_array) or not
                self.ready_for_next_drive
         ):
+            print(len(self.waypoint_array))
+            print(len(self.follower_array)+1)
+            print(self.ready_for_next_drive)
             rospy.sleep(1)
 
+        print("Allocating Goals to Robots")
         # loop over waypoints, pairing them with the closest robot
         used_robots = []
         waypoint_robot_pairs = []
         for point in self.waypoint_array:
-            min_distance = math.inf
+            min_distance = numpy.inf
             min_distance_bot = ""
             min_distance_point = (0, 0)
-            for bot in [*self.follower_array, self.bot_name]:
+            for bot in self.follower_array + [self.bot_name]:
                 if bot in used_robots:
                     continue
 
@@ -104,6 +112,7 @@ class RobotLeader:
             waypoint_robot_pairs.append((min_distance_bot, min_distance_point))
             used_robots.append(min_distance_bot)
 
+        print("Pairs: " + str(waypoint_robot_pairs))
         self.ready_for_next_drive = False
         client_list = []
         leader_coords = (0, 0)
@@ -112,10 +121,13 @@ class RobotLeader:
                 leader_coords = pair[1]
                 continue
 
-            client = actionlib.SimpleActionClient("drive_" + pair[0], DriveToTarget)
+            server_loc = "/drive_" + pair[0]
+            print("Looking for action server at " + server_loc)
+            client = actionlib.SimpleActionClient(server_loc, DriveToTargetAction)
             client.wait_for_server()
+            print("Found action server at " + server_loc)
             # set x,y for the goal
-            goal = DriveToTarget(pair[1][0], pair[1][1])
+            goal = DriveToTargetAction(pair[1][0], pair[1][1])
             client.send_goal(goal)
             client_list.append(client)
 
