@@ -10,12 +10,22 @@ import rospy  # module for ROS APIs
 from std_msgs.msg import String
 import json
 from leader_follower.srv import RequestFollowers
+from leader_follower.action import DriveToTarget
+from leader_follower.leader_follower import SimpleMotion
+import actionlib
+
 
 class RobotFollower:
     def __init__(self, bot_id):
+        self.action_name = "drive_robot_" + str(bot_id)
         self.bot_id = bot_id
         self.follower_listener = rospy.Subscriber("/subscribe_request", String, self.follower_callback)
         self.has_followed = False
+        self.action_server = actionlib.SimpleActionServer(self.action_name,
+                                                          DriveToTarget,
+                                                          execute_cb=self.execute_cb,
+                                                          auto_start=False)
+        self.is_driving = False
 
     def follower_callback(self, msg):
         """When we receive a follower request, we call the service with our name"""
@@ -24,11 +34,25 @@ class RobotFollower:
         follow = rospy.ServiceProxy(registry_name, RequestFollowers)
         follow("robot_" + self.bot_id)
 
+    def execute_cb(self, msg):
+        """Drives the robot to the target"""
+        if self.is_driving:
+            return
 
-# TODO -- ROS action server
-
-# TODO -- waits for another action initiation
+        x = msg.x
+        y = msg.y
+        self.is_driving = True
+        simple_motion = SimpleMotion()
+        current_point = (0, 0)
+        current_orientation = 0
+        desired_point = (x, y)
+        simple_motion.rotate_to_point(current_orientation, current_point, desired_point)
+        simple_motion.drive_to_point(current_point, desired_point)
+        self.is_driving = False
 
 
 if __name__ == "__main__":
     rospy.init_node('robot_follower')
+    robot_index = rospy.get_param("robot_index")
+    follower = RobotFollower(robot_index)
+    rospy.spin()

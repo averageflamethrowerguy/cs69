@@ -12,6 +12,9 @@ import json
 import numpy
 from leader_follower.msg import FollowerReq
 from leader_follower.srv import RequestFollowers, RequestFollowersResponse
+from leader_follower.action import DriveToTarget
+from leader_follower.leader_follower import SimpleMotion
+import actionlib
 
 REGISTERY_NAME = "register_followers"
 
@@ -29,6 +32,9 @@ class RobotLeader:
         # the array of follower points
         self.follower_array = []
         self.server = rospy.Service(REGISTERY_NAME, RequestFollowers, self.handle_request_followers)
+
+        self.ready_for_next_drive = True
+        self.is_driving = False
 
     def waypoint_callback(self, msg):
         """Stores the waypoints"""
@@ -52,7 +58,10 @@ class RobotLeader:
         Waits until goals have been received, and number of goals equals number of robots
         Then greedily assigns robots to goals
         """
-        while len(self.waypoint_array) == 0 or len(self.follower_array) != len(self.waypoint_array):
+        while (len(self.waypoint_array) == 0 or
+               len(self.follower_array) != len(self.waypoint_array) or not
+               self.ready_for_next_drive
+        ):
             rospy.sleep(1)
 
         # loop over waypoints, pairing them with the closest robot
@@ -93,8 +102,41 @@ class RobotLeader:
             waypoint_robot_pairs.append((min_distance_bot, min_distance_point))
             used_robots.append(min_distance_bot)
 
-        # TODO -- action client to assign goals to followers
-        # TODO -- trigger the leader to drive to the point
+        self.ready_for_next_drive = False
+        client_list = []
+        leader_coords = (0, 0)
+        for pair in waypoint_robot_pairs:
+            if pair[0] == self.bot_name:
+                leader_coords = pair[1]
+                continue
+
+            client = actionlib.SimpleActionClient("drive_" + pair[0], DriveToTarget)
+            client.wait_for_server()
+            # set x,y for the goal
+            goal = DriveToTarget(pair[1][0], pair[1][1])
+            client.send_goal(goal)
+            client_list.append(client)
+
+        # trigger the leader to drive to the point
+        self.drive_leader(leader_coords[0], leader_coords[1])
+
+        # wait for all callbacks
+        for client in client_list:
+            client.wait_for_result()
+        self.ready_for_next_drive = True
+
+    def drive_leader(self, x, y):
+        """Drives the robot to the target"""
+        if self.is_driving:
+            return
+        self.is_driving = True
+        simple_motion = SimpleMotion()
+        current_point = (0, 0)
+        current_orientation = 0
+        desired_point = (x, y)
+        simple_motion.rotate_to_point(current_orientation, current_point, desired_point)
+        simple_motion.drive_to_point(current_point, desired_point)
+        self.is_driving = False
 
 
 if __name__ == "__main__":
