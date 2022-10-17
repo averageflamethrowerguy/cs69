@@ -4,7 +4,6 @@
 # Oct 2022, with other code used from last fall
 
 
-
 # Import of python modules.
 import math  # use of pi.
 import tf  # library for transformations
@@ -20,21 +19,30 @@ from leader_follower.msg._DriveToTargetGoal import DriveToTargetGoal
 from leader_follower.simple_motion import SimpleMotion
 import actionlib
 
+# topic names
+WAYPOINT_TOPIC = "/waypoints"
+FOLLOWER_TOPIC = "/subscribe_request"
+WINNER_TOPIC = "/winner"
+RESOURCE_TOPIC = "/resources"
+
 FOLLOWER_REGISTERY_NAME = "/register_followers"
 BID_SERVICE_NAME = "/bid"
+
 
 class Auctioneer:
     def __init__(self, bot_id):
         self.bot_name = "robot_" + str(bot_id)
-        self.waypoint_callback = rospy.Subscriber("/waypoints", String, self.waypoint_callback)
-        self.follower_requester = rospy.Publisher("/subscribe_request", FollowerReq, queue_size=1)
+        self.waypoint_callback = rospy.Subscriber(WAYPOINT_TOPIC, String, self.waypoint_callback)
+        self.follower_requester = rospy.Publisher(FOLLOWER_TOPIC, FollowerReq, queue_size=1)
+        self.auction_winners = rospy.Publisher(WINNER_TOPIC, String, queue_size=1)
+        self.auction_resources = rospy.Publisher(RESOURCE_TOPIC, String, queue_size=1)
         # Setting up transformation listener.
         self.listener = tf.TransformListener()
 
         # the array of points that the followers could go to
         self.waypoint_array = []
-        self.resource_array = []               # the array of points to bid on
-        self.bid_array = []                    # the current set of bids for each robot
+        self.resource_array = []  # the array of points to bid on
+        self.bid_array = []  # the current set of bids for each robot
         self.executing_waypoints = False
         self.executed_waypoints = False
         # the array of follower points
@@ -71,11 +79,12 @@ class Auctioneer:
         """Handles bid_msg for a certain robot"""
         name = bid_msg.robot_name
         bid = json.loads(bid_msg.bid)
-        self.bid_array.append((name, bid))
+        self.bid_array.append({"name": name, "bid": bid})
 
         # if all the robots have bid
         if len(self.bid_array) == len(self.resource_array):
-
+            self.next_auction_round()
+        return RequestFollowersResponse(1)
 
     def handle_request_followers(self, req):
         """Adds follower to the follower array"""
@@ -87,7 +96,39 @@ class Auctioneer:
         return RequestFollowersResponse(1)
 
     def next_auction_round(self):
-        """Declares the winners of the current auction round"""
+        """Declares the winner of the current auction round, then publishes new resource list"""
+        min_cost = 100000000000000        # a big number
+        min_cost_robot_name = ""
+        min_cost_waypoint = (0, 0)
+        min_cost_waypoint_id = -1
+        # find the lowest bid
+        for bid_group in self.bid_array:
+            for waypoint in bid_group["bid"]:
+                # (id, cost, coordinates)
+                if waypoint[1] < min_cost:
+                    min_cost = waypoint[1]
+                    min_cost_robot_name = bid_group["name"]
+                    min_cost_waypoint = waypoint[2]
+                    min_cost_waypoint_id = waypoint[0]
+
+        winner_msg = String(json.dumps([min_cost_robot_name, min_cost_waypoint]))
+        self.auction_winners.publish(winner_msg)
+
+        # remove this waypoint from the list
+        new_resources = []
+        for waypoint in self.resource_array:
+            if waypoint[0] != min_cost_waypoint_id:
+                new_resources.append(waypoint)
+
+        # set the new resource array
+        self.resource_array = new_resources
+        self.bid_array = []
+        if len(self.resource_array) == 0:
+            self.executing_waypoints = False
+        # otherwise send out a new auction
+        else:
+            strmsg = String(json.dumps(self.resource_array))
+            self.auction_resources.publish(strmsg)
 
     def allocate_goals_robots(self):
         """
@@ -96,11 +137,11 @@ class Auctioneer:
         """
         # wait until we have waypoints and enough robots to cover them, and have not driven to these waypoints yet
         while (len(self.waypoint_array) == 0 or
-               len(self.follower_array)+1 != len(self.waypoint_array) or
+               len(self.follower_array) + 1 != len(self.waypoint_array) or
                self.executed_waypoints
         ):
             print(len(self.waypoint_array))
-            print(len(self.follower_array)+1)
+            print(len(self.follower_array) + 1)
             print(self.ready_for_next_drive)
             rospy.sleep(1)
 
@@ -109,9 +150,13 @@ class Auctioneer:
         self.executing_waypoints = True
         self.resource_array = []
         i = 0
+        # copy the waypoint array into the resource array
         for waypoint in self.waypoint_array:
             self.resource_array.append((i, waypoint))
             i += 1
+        # publish the resource array so that robots can bid on it
+        strmsg = String(json.dumps(self.resource_array))
+        self.auction_resources.publish(strmsg)
 
 
 if __name__ == "__main__":
@@ -126,4 +171,3 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         leader.allocate_goals_robots()
         rospy.sleep(2)
-
