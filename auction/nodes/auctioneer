@@ -104,11 +104,11 @@ class Auctioneer:
         # find the lowest bid
         for bid_group in self.bid_array:
             for waypoint in bid_group["bid"]:
-                # (id, cost, coordinates)
-                if waypoint[1] < min_cost:
-                    min_cost = waypoint[1]
+                # (id, coordinates, cost)
+                if waypoint[2] < min_cost:
+                    min_cost = waypoint[2]
                     min_cost_robot_name = bid_group["name"]
-                    min_cost_waypoint = waypoint[2]
+                    min_cost_waypoint = waypoint[1]
                     min_cost_waypoint_id = waypoint[0]
 
         winner_msg = String(json.dumps([min_cost_robot_name, min_cost_waypoint]))

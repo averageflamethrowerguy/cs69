@@ -7,26 +7,34 @@
 import math  # use of pi.
 import tf  # library for transformations
 import rospy  # module for ROS APIs
+import numpy
 from std_msgs.msg import String
 import json
 from leader_follower.msg import FollowerReq
 from leader_follower.srv import RequestFollowers
 from leader_follower.msg._DriveToTargetAction import DriveToTargetAction
+from leader_follower.srv import Bid, BidResponse
 from leader_follower.simple_motion import SimpleMotion
 import actionlib
 
+# topic names
+FOLLOWER_TOPIC = "/subscribe_request"
+WINNER_TOPIC = "/winner"
+RESOURCE_TOPIC = "/resources"
+
+BID_SERVICE_NAME = "/bid"
 
 class RobotFollower:
     def __init__(self, bot_id):
-        self.action_name = "/drive_robot_" + str(bot_id)
         self.bot_id = bot_id
-        self.follower_listener = rospy.Subscriber("/subscribe_request", FollowerReq, self.follower_callback)
+        self.name = "robot_" + str(self.bot_id)
+        self.follower_listener = rospy.Subscriber(FOLLOWER_TOPIC, FollowerReq, self.follower_callback)
+        self.winner_listener = rospy.Subscriber(WINNER_TOPIC, String, self.winner_callback)
+        self.resource_listener = rospy.Subscriber(WINNER_TOPIC, String, self.resource_callback)
+
+        self.listener = tf.TransformListener()
+
         self.has_followed = False
-        self.action_server = actionlib.SimpleActionServer(self.action_name,
-                                                          DriveToTargetAction,
-                                                          execute_cb=self.execute_cb,
-                                                          auto_start=False)
-        self.action_server.start()
         self.is_driving = False
 
     def follower_callback(self, msg):
@@ -34,19 +42,61 @@ class RobotFollower:
         if self.has_followed:
             return
         service_name = msg.service_name
-        print("robot_" + str(self.bot_id) + " received follower request; following on topic " + service_name)
+        print(self.name + " received follower request; following on topic " + service_name)
         self.has_followed = True
         follow = rospy.ServiceProxy(service_name, RequestFollowers)
-        follow("robot_" + str(self.bot_id))
+        follow(self.name)
 
-    def execute_cb(self, msg):
+    def winner_callback(self, msg):
+        """If the robot is a winner, converts the point to its frame of reference and drives to it"""
+        data = json.loads(msg.data)
+        print("Robot " + self.name + " won a trip to " + str(data[1]))
+        if self.name != data[0]:
+            return
+
+        coord = data[1]
+        (trans, rot) = self.listener.lookupTransform(self.name + '/base_footprint', '/world', rospy.Time(0))
+        t = tf.transformations.translation_matrix(trans)
+        R = tf.transformations.quaternion_matrix(rot)
+
+        world_T_baselink = t.dot(R)
+        target_np = world_T_baselink.dot(
+            numpy.array([coord[0], coord[1], 0, 1])
+        )
+        self.drive_to(target_np[0], target_np[1])
+
+    # gets the distance between two points
+    def get_distance_between_point(self, p1, p2):
+        x_diff = p1[0] - p2[0]
+        y_diff = p1[1] - p2[1]
+        return math.sqrt(x_diff*x_diff + y_diff*y_diff)
+
+    def resource_callback(self, msg):
+        """Handles reading the resources, converting them into its own frame of reference, and bidding on them"""
+        data = json.loads(msg.data)
+        for resource in data:
+            resource_loc = resource[1]
+
+            print("Looking up transform between /world and " + self.name + '/base_footprint')
+            (trans, rot) = self.listener.lookupTransform(self.name + '/base_footprint', '/world', rospy.Time(0))
+            t = tf.transformations.translation_matrix(trans)
+            R = tf.transformations.quaternion_matrix(rot)
+
+            world_T_baselink = t.dot(R)
+            target_np = world_T_baselink.dot(
+                numpy.array([resource_loc[0], resource_loc[1], 0, 1])
+            )
+            # add the cost in at the end
+            resource.append(self.get_distance_between_point((0, 0), target_np))
+        bid = rospy.ServiceProxy(BID_SERVICE_NAME, Bid)
+        bid(self.name, json.dumps(data))
+
+    def drive_to(self, x, y):
         """Drives the robot to the target"""
         print("robot_" + str(self.bot_id) + " received a drive command")
         if self.is_driving:
             return
 
-        x = msg.x
-        y = msg.y
         self.is_driving = True
         simple_motion = SimpleMotion()
         current_point = (0, 0)
