@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+# The line above is important so that this file is interpreted with Python when running it.
+# tf_broadcaster, written by Elliot Potter
+# Oct 2022, with other code used from last fall
+# Generally followed this tutorial: http://wiki.ros.org/tf/Tutorials/Writing%20a%20tf%20broadcaster%20%28Python%29
+
+# Import of python modules.
+import math  # use of pi.
+import tf  # library for transformations.
+
+# import of relevant libraries.
+import rospy  # module for ROS APIs
+from std_msgs.msg import Float32
+from geometry_msgs.msg import PoseWithCovarianceStamped
+import tf
+
+FREQUENCY = 10  # freq for publishing transforms
+
+
+class Broadcaster:
+    def __init__(self):
+        self.sub = rospy.Subscriber("/initialpose", PoseWithCovarianceStamped, self.pose_callback)
+        self.br = tf.TransformBroadcaster()
+        self.robot_pos_array = []  # each will contain a dictionary { "frame_id": <frame_id>, "pose": <pose> }
+
+    def pose_callback(self, pose_msg):
+        """Either adds or updates the robot pose in the array"""
+        did_find = False
+        for i in range(len(self.robot_pos_array)):
+            if self.robot_pos_array[i]["frame_id"] == pose_msg.header.frame_id:
+                self.robot_pos_array[i]["pose"] = pose_msg.pose.pose
+                did_find = True
+        if not did_find:
+            self.robot_pos_array.append({"frame_id": pose_msg.header.frame_id, "pose": pose_msg.pose.pose})
+
+    def message_loop(self):
+        """Message loop -- publishes transforms for each robot"""
+        rate = rospy.Rate(FREQUENCY)
+        while not rospy.is_shutdown():
+            for robot in self.robot_pos_array:
+                pose = robot["pose"]
+                self.br.sendTransform((pose.position.x, pose.position.y, pose.position.z),
+                                      (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w),
+                                      rospy.Time.now(),
+                                      "robot_" + robot["frame_id"] + "/odom",
+                                      "/world"
+                                      )
+                rate.sleep()
+
+
+if __name__ == '__main__':
+    rospy.init_node('map_tf_broadcaster')
+    caster = Broadcaster()
+    caster.message_loop()

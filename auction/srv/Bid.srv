@@ -1,0 +1,4 @@
+string robot_name
+string bid
+---
+int32 return_code

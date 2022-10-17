@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+# The line above is important so that this file is interpreted with Python when running it.
+# waypoint_broadcaster, written by Elliot Potter
+# Oct 2022, with other code used from last fall
+
+# Import of python modules.
+import math  # use of pi.
+import random
+
+import tf  # library for transformations.
+
+# Import of python modules.
+import math  # use of pi.
+import tf  # library for transformations.
+import json
+
+# import of relevant libraries.
+import rospy  # module for ROS APIs
+from std_msgs.msg import String
+
+FREQUENCY = 10  # freq for publishing transforms
+SQUARE_EDGE_LENGTH = 10  # the size of the square to generate waypoints over
+POINT_MIN_SPACING = 2    # how far points must be spaced from one another
+
+# generates a random point
+def generate_random_point():
+    x_loc = random.randint(-int(SQUARE_EDGE_LENGTH/2), SQUARE_EDGE_LENGTH)
+    y_loc = random.randint(-int(SQUARE_EDGE_LENGTH/2), SQUARE_EDGE_LENGTH)
+    return (x_loc, y_loc)
+
+# gets the distance between two points
+def get_distance_between_point(p1, p2):
+    x_diff = p1[0] - p2[0]
+    y_diff = p1[1] - p2[1]
+    return math.sqrt(x_diff*x_diff + y_diff*y_diff)
+
+
+if __name__ == '__main__':
+    rospy.init_node('waypoint_node')
+    pub = rospy.Publisher("/waypoints", String, queue_size=1)
+    msg = String()
+
+    points = [generate_random_point(), generate_random_point()]
+    # generate 3 random points
+
+    # re roll until we get a point with the correct spacing
+    while POINT_MIN_SPACING < get_distance_between_point(points[0], points[1]):
+        points[1] = generate_random_point()
+
+    points.append(generate_random_point())
+
+    # re roll until we get a point with the correct spacing
+    while (POINT_MIN_SPACING < get_distance_between_point(points[0], points[2]) or
+           POINT_MIN_SPACING < get_distance_between_point(points[1], points[2])
+    ):
+        points[2] = generate_random_point()
+
+    msg.data = json.dumps(points)
+
+    rate = rospy.Rate(FREQUENCY)
+    while not rospy.is_shutdown():
+        pub.publish(msg)
+        rate.sleep()
+
