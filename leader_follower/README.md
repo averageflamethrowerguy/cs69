@@ -1,13 +1,13 @@
-# leader_follower ROS package
-This ROS package corresponds to PA3. It has a leader robot that controls some number of followers, and greedily assigns
-them to visit points.
+# auction ROS package
+This ROS package corresponds to PA4. It has an auctioneer and three followers that will bid
+on random target points.
 
 ## Requirements
 - ROS -- tested on Melodic, but other versions may work.
 
 ## Configuration
 The number of robots and their locations are determined by `robot_group.launch`. The positions to visit are determined
-by `./nodes/waypoint_broadcaster`
+by a random function in `./nodes/waypoint_broadcaster`
 
 ## Build
 Once cloned in a ROS workspace, e.g., `ros_workspace/src/`, run the following commands to build it:
@@ -19,12 +19,12 @@ Once cloned in a ROS workspace, e.g., `ros_workspace/src/`, run the following co
 Terminal 1
 
     source ros_workspace/install/setup.sh
-    roslaunch leader_follower empty_world.launch
+    roslaunch auction empty_world.launch
 
 Terminal 2
 
 	source ros_workspace/install/setup.sh
-	roslaunch leader_follower robot_group.launch
+	roslaunch auction robot_group.launch
 
 ## Attribution & Licensing
 
