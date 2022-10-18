@@ -20,8 +20,8 @@
     <param name="is_stage" value="0" />
 
     <!-- Broadcasts the tfs for each robot -->
-    <node pkg="leader_follower" type="tf_broadcaster" name="tf_broadcaster" output="screen" />
-    <node pkg="leader_follower" type="waypoint_broadcaster" name="waypoint_broadcaster" output="screen" />
+    <node pkg="auction" type="tf_broadcaster" name="tf_broadcaster" output="screen" />
+    <node pkg="auction" type="waypoint_broadcaster" name="waypoint_broadcaster" output="screen" />
 
     <!-- Define robot_0 -->
     <group ns="robot_0">
@@ -31,8 +31,8 @@
         <param name="y" value="$(arg robot_0_pos_y)" />
         <param name="orientation" value="$(arg robot_0_yaw)" />
 
-        <node pkg="leader_follower" type="initialpose_broadcaster" name="initialpose_broadcaster" output="screen" />
-        <param name="robot_description" command="$(find xacro)/xacro.py $(find leader_follower)/urdf/turtlebot3_waffle_pi.urdf.xacro" />
+        <node pkg="auction" type="initialpose_broadcaster" name="initialpose_broadcaster" output="screen" />
+        <param name="robot_description" command="$(find xacro)/xacro.py $(find auction)/urdf/turtlebot3_waffle_pi.urdf.xacro" />
         <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
             <param name="publish_frequency" type="double" value="50.0" />
             <param name="tf_prefix" value="robot_0" />
@@ -41,8 +41,8 @@
         <remap from="/cmd_vel" to="/robot_0/cmd_vel"/>
 <!--         <remap from="/robot_0/scan" to="/scan"/> -->
         <!-- This robot has both an auctioneer as well as a follower -->
-        <node pkg="leader_follower" type="auctioneer" name="auctioneer" output="screen" />
-        <node pkg="leader_follower" type="robot_follower" name="robot_follower" output="screen" />
+        <node pkg="auction" type="auctioneer" name="auctioneer" output="screen" />
+        <node pkg="auction" type="robot_follower" name="robot_follower" output="screen" />
     </group>
 
 <!--     Define robot_1 -->
@@ -53,8 +53,8 @@
         <param name="y" value="$(arg robot_1_pos_y)" />
         <param name="orientation" value="$(arg robot_1_yaw)" />
 
-        <node pkg="leader_follower" type="initialpose_broadcaster" name="initialpose_broadcaster" output="screen" />
-        <param name="robot_description" command="$(find xacro)/xacro.py $(find leader_follower)/urdf/turtlebot3_waffle_pi.urdf.xacro" />
+        <node pkg="auction" type="initialpose_broadcaster" name="initialpose_broadcaster" output="screen" />
+        <param name="robot_description" command="$(find xacro)/xacro.py $(find auction)/urdf/turtlebot3_waffle_pi.urdf.xacro" />
         <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
             <param name="publish_frequency" type="double" value="50.0" />
             <param name="tf_prefix" value="robot_1" />
@@ -62,7 +62,7 @@
         <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model robot_1 -x $(arg robot_1_pos_x) -y $(arg robot_1_pos_y) -z $(arg robot_1_pos_z)          -Y $(arg robot_1_yaw) -param robot_description" />
         <remap from="/cmd_vel" to="/robot_1/cmd_vel"/>
         <!--         <remap from="/robot_1/scan" to="/scan"/> -->
-        <node pkg="leader_follower" type="robot_follower" name="robot_follower" output="screen" />
+        <node pkg="auction" type="robot_follower" name="robot_follower" output="screen" />
     </group>
 
 <!--     Define robot_2 -->
@@ -73,8 +73,8 @@
         <param name="y" value="$(arg robot_2_pos_y)" />
         <param name="orientation" value="$(arg robot_2_yaw)" />
 
-        <node pkg="leader_follower" type="initialpose_broadcaster" name="initialpose_broadcaster" output="screen" />
-        <param name="robot_description" command="$(find xacro)/xacro.py $(find leader_follower)/urdf/turtlebot3_waffle_pi.urdf.xacro" />
+        <node pkg="auction" type="initialpose_broadcaster" name="initialpose_broadcaster" output="screen" />
+        <param name="robot_description" command="$(find xacro)/xacro.py $(find auction)/urdf/turtlebot3_waffle_pi.urdf.xacro" />
         <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
             <param name="publish_frequency" type="double" value="50.0" />
             <param name="tf_prefix" value="robot_2" />
@@ -84,7 +84,7 @@
         <!--         <remap from="/robot_0/scan" to="/scan"/> -->
         <param name="robot_count" value="3" />
         <param name="robot_index" value="2" />
-        <node pkg="leader_follower" type="robot_follower" name="robot_follower" output="screen" />
+        <node pkg="auction" type="robot_follower" name="robot_follower" output="screen" />
     </group>
 
 </launch>

@@ -11,12 +11,12 @@ import rospy  # module for ROS APIs
 from std_msgs.msg import String
 import json
 import numpy
-from leader_follower.msg import FollowerReq
-from leader_follower.srv import RequestFollowers, RequestFollowersResponse
-from leader_follower.srv import Bid, BidResponse
-from leader_follower.msg._DriveToTargetAction import DriveToTargetAction
-from leader_follower.msg._DriveToTargetGoal import DriveToTargetGoal
-from leader_follower.simple_motion import SimpleMotion
+from auction.msg import FollowerReq
+from auction.srv import RequestFollowers, RequestFollowersResponse
+from auction.srv import Bid, BidResponse
+from auction.msg._DriveToTargetAction import DriveToTargetAction
+from auction.msg._DriveToTargetGoal import DriveToTargetGoal
+from auction.simple_motion import SimpleMotion
 import actionlib
 
 # topic names
