@@ -76,6 +76,9 @@ class RobotFollower:
 
     def resource_callback(self, msg):
         """Handles reading the resources, converting them into its own frame of reference, and bidding on them"""
+        if self.is_driving:
+            return
+
         print(self.name + " responding to a request for bids")
         data = json.loads(msg.data)
         (trans, rot) = self.listener.lookupTransform(self.name + '/base_footprint', '/world', rospy.Time(0))
@@ -96,10 +99,6 @@ class RobotFollower:
     def drive_to(self, x, y):
         """Drives the robot to the target"""
         print("robot_" + str(self.bot_id) + " received a drive command")
-        if self.is_driving:
-            return
-
-        self.is_driving = True
         simple_motion = SimpleMotion()
         current_point = (0, 0)
         current_orientation = 0
