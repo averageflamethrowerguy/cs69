@@ -24,8 +24,8 @@ POINT_MIN_SPACING = 2    # how far points must be spaced from one another
 
 # generates a random point
 def generate_random_point():
-    x_loc = random.randint(-int(SQUARE_EDGE_LENGTH/2), SQUARE_EDGE_LENGTH)
-    y_loc = random.randint(-int(SQUARE_EDGE_LENGTH/2), SQUARE_EDGE_LENGTH)
+    x_loc = random.randint(-int(SQUARE_EDGE_LENGTH/2), int(SQUARE_EDGE_LENGTH/2))
+    y_loc = random.randint(-int(SQUARE_EDGE_LENGTH/2), int(SQUARE_EDGE_LENGTH/2))
     return (x_loc, y_loc)
 
 # gets the distance between two points
@@ -44,14 +44,14 @@ if __name__ == '__main__':
     # generate 3 random points
 
     # re roll until we get a point with the correct spacing
-    while POINT_MIN_SPACING < get_distance_between_point(points[0], points[1]):
+    while POINT_MIN_SPACING > get_distance_between_point(points[0], points[1]):
         points[1] = generate_random_point()
 
     points.append(generate_random_point())
 
     # re roll until we get a point with the correct spacing
-    while (POINT_MIN_SPACING < get_distance_between_point(points[0], points[2]) or
-           POINT_MIN_SPACING < get_distance_between_point(points[1], points[2])
+    while (POINT_MIN_SPACING > get_distance_between_point(points[0], points[2]) or
+           POINT_MIN_SPACING > get_distance_between_point(points[1], points[2])
     ):
         points[2] = generate_random_point()
 

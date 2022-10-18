@@ -30,7 +30,7 @@ class RobotFollower:
         self.name = "robot_" + str(self.bot_id)
         self.follower_listener = rospy.Subscriber(FOLLOWER_TOPIC, FollowerReq, self.follower_callback)
         self.winner_listener = rospy.Subscriber(WINNER_TOPIC, String, self.winner_callback)
-        self.resource_listener = rospy.Subscriber(WINNER_TOPIC, String, self.resource_callback)
+        self.resource_listener = rospy.Subscriber(RESOURCE_TOPIC, String, self.resource_callback)
 
         self.listener = tf.TransformListener()
 
@@ -50,9 +50,11 @@ class RobotFollower:
     def winner_callback(self, msg):
         """If the robot is a winner, converts the point to its frame of reference and drives to it"""
         data = json.loads(msg.data)
-        print("Robot " + self.name + " won a trip to " + str(data[1]))
         if self.name != data[0]:
             return
+
+        print("Robot " + self.name + " won a trip to " + str(data[1]))
+        self.is_driving = True
 
         coord = data[1]
         (trans, rot) = self.listener.lookupTransform(self.name + '/base_footprint', '/world', rospy.Time(0))
@@ -64,6 +66,7 @@ class RobotFollower:
             numpy.array([coord[0], coord[1], 0, 1])
         )
         self.drive_to(target_np[0], target_np[1])
+        self.is_driving = False
 
     # gets the distance between two points
     def get_distance_between_point(self, p1, p2):
@@ -73,16 +76,15 @@ class RobotFollower:
 
     def resource_callback(self, msg):
         """Handles reading the resources, converting them into its own frame of reference, and bidding on them"""
+        print(self.name + " responding to a request for bids")
         data = json.loads(msg.data)
+        (trans, rot) = self.listener.lookupTransform(self.name + '/base_footprint', '/world', rospy.Time(0))
+        t = tf.transformations.translation_matrix(trans)
+        R = tf.transformations.quaternion_matrix(rot)
+
+        world_T_baselink = t.dot(R)
         for resource in data:
             resource_loc = resource[1]
-
-            print("Looking up transform between /world and " + self.name + '/base_footprint')
-            (trans, rot) = self.listener.lookupTransform(self.name + '/base_footprint', '/world', rospy.Time(0))
-            t = tf.transformations.translation_matrix(trans)
-            R = tf.transformations.quaternion_matrix(rot)
-
-            world_T_baselink = t.dot(R)
             target_np = world_T_baselink.dot(
                 numpy.array([resource_loc[0], resource_loc[1], 0, 1])
             )

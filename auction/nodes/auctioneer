@@ -68,6 +68,9 @@ class Auctioneer:
             if old_array[i] != self.waypoint_array[i]:
                 self.executed_waypoints = False
 
+        if not self.executed_waypoints or not self.executing_waypoints:
+            print("Found waypoints: " + str(self.waypoint_array))
+
     def send_request_to_followers(self):
         """send request to robot followers for them to sign up"""
         print("Sending follower request")
@@ -80,11 +83,12 @@ class Auctioneer:
         name = bid_msg.robot_name
         bid = json.loads(bid_msg.bid)
         self.bid_array.append({"name": name, "bid": bid})
+        print("Received bid from " + name)
 
         # if all the robots have bid
         if len(self.bid_array) == len(self.resource_array):
             self.next_auction_round()
-        return RequestFollowersResponse(1)
+        return BidResponse(1)
 
     def handle_request_followers(self, req):
         """Adds follower to the follower array"""
@@ -111,6 +115,7 @@ class Auctioneer:
                     min_cost_waypoint = waypoint[1]
                     min_cost_waypoint_id = waypoint[0]
 
+        print(min_cost_robot_name + " won allocation of " + str(min_cost_waypoint))
         winner_msg = String(json.dumps([min_cost_robot_name, min_cost_waypoint]))
         self.auction_winners.publish(winner_msg)
 
@@ -125,6 +130,8 @@ class Auctioneer:
         self.bid_array = []
         if len(self.resource_array) == 0:
             self.executing_waypoints = False
+            self.executed_waypoints = True
+            print("FINISHED AUCTION OF POINTS")
         # otherwise send out a new auction
         else:
             strmsg = String(json.dumps(self.resource_array))
@@ -137,11 +144,11 @@ class Auctioneer:
         """
         # wait until we have waypoints and enough robots to cover them, and have not driven to these waypoints yet
         while (len(self.waypoint_array) == 0 or
-               len(self.follower_array) + 1 != len(self.waypoint_array) or
-               self.executed_waypoints
+               len(self.follower_array) != len(self.waypoint_array) or
+               self.executed_waypoints or self.executing_waypoints
         ):
             print(len(self.waypoint_array))
-            print(len(self.follower_array) + 1)
+            print(len(self.follower_array))
             print(self.ready_for_next_drive)
             rospy.sleep(1)
 
