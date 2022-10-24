@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+# The line above is important so that this file is interpreted with Python when running it.
+# waypoint_broadcaster, written by Elliot Potter
+# Oct 2022, with other code used from last fall
+
+# Import of python modules.
+import math  # use of pi.
+import tf  # library for transformations.
+
+# Import of python modules.
+import math  # use of pi.
+import tf  # library for transformations.
+import json
+
+# import of relevant libraries.
+import rospy  # module for ROS APIs
+from std_msgs.msg import String
+
+FREQUENCY = 10  # freq for publishing transforms
+NODE_TOPIC = "/nodes"
+
+
+if __name__ == '__main__':
+    rospy.init_node('waypoint_node')
+    pub = rospy.Publisher(NODE_TOPIC, String, queue_size=1)
+    msg = String()
+
+    msg.data = json.dumps({
+        "nodes": ((-8, -6), (-3, -2), (1, 1), (3, 2), (3, -2), (14, 3), (3, 14), (5, 6), (4, 12)),
+        "terminal_nodes": [(3, 2), (14, 3), (-8, -6)],
+    })
+
+    rate = rospy.Rate(FREQUENCY)
+    while not rospy.is_shutdown():
+        pub.publish(msg)
+        rate.sleep()
+

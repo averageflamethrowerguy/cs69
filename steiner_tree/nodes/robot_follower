@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+# The line above is important so that this file is interpreted with Python when running it.
+# auctioneer, written by Elliot Potter
+# Oct 2022, with other code used from last fall
+
+# Import of python modules.
+import math  # use of pi.
+import tf  # library for transformations
+import rospy  # module for ROS APIs
+from std_msgs.msg import String
+import json
+from steiner_tree.msg import FollowerReq
+from steiner_tree.srv import RequestFollowers
+from steiner_tree.msg._DriveToTargetAction import DriveToTargetAction
+from steiner_tree.simple_motion import SimpleMotion
+import actionlib
+
+
+class RobotFollower:
+    def __init__(self, bot_id):
+        self.action_name = "/drive_robot_" + str(bot_id)
+        self.bot_id = bot_id
+        self.follower_listener = rospy.Subscriber("/subscribe_request", FollowerReq, self.follower_callback)
+        self.has_followed = False
+        self.action_server = actionlib.SimpleActionServer(self.action_name,
+                                                          DriveToTargetAction,
+                                                          execute_cb=self.execute_cb,
+                                                          auto_start=False)
+        self.action_server.start()
+        self.is_driving = False
+
+    def follower_callback(self, msg):
+        """When we receive a follower request, we call the service with our name"""
+        if self.has_followed:
+            return
+        service_name = msg.service_name
+        print("robot_" + str(self.bot_id) + " received follower request; following on topic " + service_name)
+        self.has_followed = True
+        follow = rospy.ServiceProxy(service_name, RequestFollowers)
+        follow("robot_" + str(self.bot_id))
+
+    def execute_cb(self, msg):
+        """Drives the robot to the target"""
+        print("robot_" + str(self.bot_id) + " received a drive command")
+        if self.is_driving:
+            return
+
+        x = msg.x
+        y = msg.y
+        self.is_driving = True
+        simple_motion = SimpleMotion()
+        current_point = (0, 0)
+        current_orientation = 0
+        desired_point = (x, y)
+        simple_motion.rotate_to_point(current_orientation, current_point, desired_point)
+        simple_motion.drive_to_point(current_point, desired_point)
+        self.is_driving = False
+
+
+if __name__ == "__main__":
+    rospy.init_node('robot_follower')
+    robot_index = rospy.get_param("robot_index")
+    follower = RobotFollower(robot_index)
+    rospy.spin()

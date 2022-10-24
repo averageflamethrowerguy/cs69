@@ -1,0 +1,195 @@
+#!/usr/bin/env python
+# The line above is important so that this file is interpreted with Python when running it.
+# auctioneer, written by Elliot Potter
+# Oct 2022, with other code used from last fall
+
+# Import of python modules.
+import math  # use of pi.
+import tf  # library for transformations
+import rospy  # module for ROS APIs
+from std_msgs.msg import String
+import json
+import numpy
+from steiner_tree.msg import FollowerReq
+from steiner_tree.srv import RequestFollowers, RequestFollowersResponse
+from steiner_tree.msg._DriveToTargetAction import DriveToTargetAction
+from steiner_tree.msg._DriveToTargetGoal import DriveToTargetGoal
+from steiner_tree.simple_motion import SimpleMotion
+from steiner_tree.graph_utilities import *
+import actionlib
+
+REGISTERY_NAME = "/register_followers"
+NODE_TOPIC = "/nodes"
+
+class RobotLeader:
+    def __init__(self, bot_id, connectivity_range):
+        self.bot_name = "robot_" + str(bot_id)
+        self.connectivity_range = connectivity_range
+        self.node_listener = rospy.Subscriber(NODE_TOPIC, String, self.node_callback)
+        self.follower_requester = rospy.Publisher("/subscribe_request", FollowerReq, queue_size=1)
+        # Setting up transformation listener.
+        self.listener = tf.TransformListener()
+
+        # the array of points that the followers could go to
+        self.waypoint_array = []
+        self.executed_waypoints = False
+        # the array of follower points
+        self.follower_array = []
+        self.server = rospy.Service(REGISTERY_NAME, RequestFollowers, self.handle_request_followers)
+
+        self.ready_for_next_drive = True
+        self.is_driving = False
+
+    def node_callback(self, msg):
+        """
+        Reads the nodes, connecting them to one another and creating a Steiner tree,
+        then allocating robots to waypoints
+        """
+        json_string = msg.data
+        old_array = self.waypoint_array
+        nodes = json.loads(json_string)
+
+        # get connectivity information
+        graph = get_graph(nodes["nodes"], self.connectivity_range)
+        # solve the Steiner tree problem
+        steiner_tree = solve_steiner_tree(graph, nodes["terminal_nodes"])
+        self.waypoint_array = list(steiner_tree.nodes)
+
+        print("Waypoints: " + str(self.waypoint_array))
+
+        # determine if we need to drive bots again
+        if len(self.waypoint_array) != len(old_array):
+            self.executed_waypoints = False
+            return
+
+        for i in range(len(old_array)):
+            if old_array[i] != self.waypoint_array[i]:
+                self.executed_waypoints = False
+
+    def send_request_to_followers(self):
+        """send request to robot followers for them to sign up"""
+        print("Sending follower request")
+        req = FollowerReq()
+        req.service_name = REGISTERY_NAME
+        self.follower_requester.publish(req)
+
+    def handle_request_followers(self, req):
+        """Adds follower to the follower array"""
+        name = req.robot_name
+        print("Received follower service message from robot " + name)
+        if name not in self.follower_array:
+            self.follower_array.append(name)
+        # return success message
+        return RequestFollowersResponse(1)
+
+    def allocate_goals_robots(self):
+        """
+        Waits until goals have been received, and number of goals equals number of robots
+        Then greedily assigns robots to goals
+        """
+
+        # wait until we have waypoints and enough robots to cover them, and have not driven to these waypoints yet
+        while (len(self.waypoint_array) == 0 or
+               len(self.follower_array)+1 != len(self.waypoint_array) or not
+               self.ready_for_next_drive or
+               self.executed_waypoints
+        ):
+            print(len(self.waypoint_array))
+            print(len(self.follower_array)+1)
+            print(self.ready_for_next_drive)
+            rospy.sleep(1)
+
+        print("Allocating Goals to Robots")
+        # loop over waypoints, pairing them with the closest robot
+        used_robots = []
+        waypoint_robot_pairs = []
+        for point in self.waypoint_array:
+            min_distance = numpy.inf
+            min_distance_bot = ""
+            min_distance_point = (0, 0)
+            for bot in self.follower_array + [self.bot_name]:
+                if bot in used_robots:
+                    continue
+
+                # convert the point into bot coords
+                print("Looking up transform between /world and " + bot + '/base_footprint')
+                (trans, rot) = self.listener.lookupTransform(bot + '/base_footprint', '/world', rospy.Time(0))
+                t = tf.transformations.translation_matrix(trans)
+                R = tf.transformations.quaternion_matrix(rot)
+
+                world_T_baselink = t.dot(R)
+                target_np = world_T_baselink.dot(
+                    numpy.array([point[0], point[1], 0, 1])
+                )
+
+                # calculate distance between the target and the bot (which is at 0, 0)
+                distance = math.sqrt(math.pow(target_np[0], 2) + math.pow(target_np[1], 2))
+
+                # evaluate if this bot is closer than previous closest
+                if distance < min_distance:
+                    min_distance = distance
+                    min_distance_bot = bot
+                    min_distance_point = (target_np[0], target_np[1])
+
+            waypoint_robot_pairs.append((min_distance_bot, min_distance_point, point))
+            used_robots.append(min_distance_bot)
+
+        print("Pairs: " + str(waypoint_robot_pairs))
+        self.ready_for_next_drive = False
+        client_list = []
+        leader_coords = (0, 0)
+        leader_coords_world = (0, 0)
+        for pair in waypoint_robot_pairs:
+            if pair[0] == self.bot_name:
+                leader_coords = pair[1]
+                leader_coords_world = pair[2]
+                continue
+
+            server_loc = "/drive_" + pair[0]
+            print("Looking for action server at " + server_loc)
+            client = actionlib.SimpleActionClient(server_loc, DriveToTargetAction)
+            client.wait_for_server()
+            print("Found action server at " + server_loc)
+            # set x,y for the goal
+            goal = DriveToTargetGoal(pair[1][0], pair[1][1])
+            client.send_goal(goal)
+            client_list.append(client)
+
+        # trigger the leader to drive to the point
+        print("driving leader to " + str(leader_coords_world) + ", or " + str(leader_coords) + " in leader coords")
+        self.drive_leader(leader_coords[0], leader_coords[1])
+
+        # wait for all callbacks
+        for client in client_list:
+            client.wait_for_result()
+        self.ready_for_next_drive = True
+        self.executed_waypoints = True
+
+    def drive_leader(self, x, y):
+        """Drives the robot to the target"""
+        if self.is_driving:
+            return
+        self.is_driving = True
+        simple_motion = SimpleMotion()
+        current_point = (0, 0)
+        current_orientation = 0
+        desired_point = (x, y)
+        simple_motion.rotate_to_point(current_orientation, current_point, desired_point)
+        simple_motion.drive_to_point(current_point, desired_point)
+        self.is_driving = False
+
+
+if __name__ == "__main__":
+    rospy.init_node('auctioneer')
+    robot_index = rospy.get_param("robot_index")
+    robot_connectivity_range = rospy.get_param("/connectivity_range")
+    leader = RobotLeader(robot_index, robot_connectivity_range)
+
+    rospy.sleep(2)
+    leader.send_request_to_followers()
+
+    # loop, allocating goals to robots
+    while not rospy.is_shutdown():
+        leader.allocate_goals_robots()
+        rospy.sleep(2)
+
