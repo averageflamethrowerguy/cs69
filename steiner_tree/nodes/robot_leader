@@ -90,7 +90,7 @@ class RobotLeader:
 
         # wait until we have waypoints and enough robots to cover them, and have not driven to these waypoints yet
         while (len(self.waypoint_array) == 0 or
-               len(self.follower_array)+1 != len(self.waypoint_array) or not
+               len(self.follower_array)+1 < len(self.waypoint_array) or not
                self.ready_for_next_drive or
                self.executed_waypoints
         ):
